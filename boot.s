@@ -11,28 +11,44 @@ _start:
     movw    %ax, %ss
     movw    $0x7C00, %sp
 
-    # Print message
-    movw    $message, %si
+    # Print first stage message
+    movw    $stage1_msg, %si
     call    print_string
 
-    # Infinite loop
+    # Load additional sectors
+    movb    $0x02, %ah    # BIOS read sector function
+    movb    $2, %al       # Number of sectors to read
+    movb    $0x00, %ch    # Cylinder 0
+    movb    $0x02, %cl    # Start from sector 2
+    movb    $0x00, %dh    # Head 0
+    movb    $0x00, %dl    # Drive 0 (floppy)
+    movw    $0x7E00, %bx  # Load to ES:BX = 0x7E00
+    int     $0x13
+    jc      error         # If carry flag set, there was an error
+
+    # Jump to second stage
+    jmp     second_stage
+
+error:
+    movw    $error_msg, %si
+    call    print_string
     jmp     .
 
 print_string:
-    movb    $0x0E, %ah    /* BIOS teletype output */
+    movb    $0x0E, %ah
 1:  
-    lodsb                  /* Load next character */
-    testb   %al, %al      /* Check if end of string */
-    jz      2f            /* If zero, we're done */
-    int     $0x10         /* Print character */
+    lodsb
+    testb   %al, %al
+    jz      2f
+    int     $0x10
     jmp     1b
 2:  
     ret
 
-message:
-    .ascii  "Hello, OS World!"
-    .byte   0
+stage1_msg:
+    .ascii  "First stage bootloader...\r\n\0"
+error_msg:
+    .ascii  "Error loading sectors!\r\n\0"
 
-    /* Fill with zeros until 510 bytes */
     .org    510
-    .word   0xAA55        /* Boot signature */
+    .word   0xAA55

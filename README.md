@@ -46,6 +46,23 @@ ld -Ttext 0x7C00 --oformat binary -o boot.bin boot.o
 
 // ...rest of existing README content...
 
+## Multi-Sector Bootloader
+The project now implements a two-stage bootloader:
+
+1. First Stage (boot.s):
+   - Loads in first sector (512 bytes)
+   - Sets up segments
+   - Loads additional sectors using BIOS
+   - Jumps to second stage
+
+2. Second Stage (second.s):
+   - Contains additional functionality
+   - Loaded at address 0x7E00
+   - Changes display mode
+   - Prints colored text
+
+### Building
+
 ## Key Differences from NASM
 1. AT&T Syntax vs Intel Syntax:
    - Destination comes last (opposite of NASM)
