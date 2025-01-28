@@ -85,3 +85,22 @@ int main() {
     
     return 0;
 }
+
+/*
+1. 
+Yes, the child process (P2) can write to the file using the duplicated file pointer fp.
+ The file descriptor is copied during fork(), giving the child process its own valid file handle.
+2.
+P2 will write at the file position where P1 left off before the fork(). 
+The file offset is shared initially and then becomes independent for each process. Each write operation advances that process's file position.
+3. 
+Both processes can write to the file, and their writes will be interleaved based on:
+Their relative execution timing
+The OS scheduling
+The buffering and flushing of the file stream
+4.
+No, when P1 closes the file, it remains open for P2. This is because:
+Each process has its own file descriptor table after fork()
+The close operation in one process only affects that process's file descriptor
+P2 can continue writing even after P1 closes the file
+*/

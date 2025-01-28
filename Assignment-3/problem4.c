@@ -82,3 +82,23 @@ int main() {
     
     return 0;
 }
+
+/*
+1. 
+Yes, the child process (P2) can read from the file using the file pointer fp. 
+This is because fork() creates a duplicate of the file descriptor table, and the file pointer is valid in both processes.
+2. 
+P2 will start reading from the same file position where P1 left off before the fork(). This is because the file offset is also duplicated during fork().
+3.
+Both processes maintain their own file position indicators. When either process reads from the file, it advances its own file position independently.
+Parent reads first line before fork
+After fork, both processes have their file pointers at the beginning of line 2
+When they read subsequently, they each get different lines because they maintain separate file positions
+4. 
+No, when P1 closes the file, it remains open for P2. This is because after fork():
+
+
+Each process has its own file descriptor table
+The close operation in one process doesn't affect the other
+Each process must close its own file descriptor
+*/
