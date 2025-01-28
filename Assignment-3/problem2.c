@@ -33,10 +33,11 @@ void bubbleSort(int arr[], int n){
 int main() {
 int n;
 pid_t p;
-int arr[n];
 
 printf("Enter the size of the array: ");
 scanf("%d", &n);
+
+int arr[n];
 
 printf("Enter the values for the array:\n");
 

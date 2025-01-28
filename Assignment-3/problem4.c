@@ -29,8 +29,8 @@ int main() {
     fprintf(temp, "Line 3 - Final line of the file\n");
     fclose(temp);
     
-    // Open file for reading
-    FILE *fp = fopen("test.txt", "r");
+    // Opening file for reading
+    FILE *fp = fopen("oslab.txt", "r");
     if (fp == NULL) {
         perror("Error opening file");
         return 1;
@@ -38,19 +38,19 @@ int main() {
     
     printf("Initial file position: %ld\n", ftell(fp));
     
-    // Read first line in parent before fork
+    // Reading first line in parent before fork
     printf("\nParent reading before fork:\n");
     read_and_print(fp, "Parent");
     
     // Fork the process
-    pid_t pid = fork();
+    pid_t p = fork();
     
-    if (pid == -1) {
+    if (p == -1) {
         perror("Fork failed");
         exit(1);
     }
     
-    if (pid == 0) {
+    if (p == 0) {
         printf("\nChild process starting - PID: %d\n", getpid());
         
         // Child reads from file
