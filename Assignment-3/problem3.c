@@ -31,7 +31,7 @@ int main() {
     printf("Enter the size of the array: ");
     scanf("%d", &n);
     
-    // Dynamically allocate memory for the array
+    // Dynamic allocation of memory for the array
     arr = (int*) malloc(n * sizeof(int));
     sorted_arr = (int*) malloc(n * sizeof(int));
 
