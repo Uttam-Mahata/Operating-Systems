@@ -1,0 +1,5 @@
+[Parent writes: Message before fork]
+[Child writes: First message]
+[Parent writes: Message after fork]
+[Child writes: Second mefssage]
+[Child writes: Message after parent might have closed]
