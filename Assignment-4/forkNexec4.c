@@ -1,13 +1,79 @@
-// This is an extension of the previous assignment titled "Child Processes execute different executable files as "told" by the user: Problem 1." Hence, you may please edit the final file (say, forkNexec3.c) for the present assignment.
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <string.h>
 
-// Please note that often programs take command line arguments (Eg., the programs you write having a main() function defined as "int main(int argc, char *argv[]) {.....}". For example, the unix command "ls" (/bin/ls being the executable file) can be executed as "ls -l" ("-l" is the command line argument) producing an output like:
-// total 488
-// -rw-rw-r-- 1 manas manas 486286 Nov 10  2022 8086.zip
-// drwxrwxr-x 2 manas manas   4096 Nov 21  2022 ASM
-// drwx------ 2 manas manas   4096 Nov 10  2022 bin
+#define MAX_LINE_LENGTH 256
+#define MAX_ARGS 16
 
-// or can be executed as "ls -l 8086*" ("-l" and "8086*" being the command line arguments) producing output like:
-// -rw-rw-r-- 1 manas manas 486286 Nov 10  2022 8086.zip
 
-// In the present assignment, the program, in every iteration of the infinite-loop, reads a whole line, where the 1st word of the line is to be treated as the name of an executable file, and the remaining words are to be treated as the command line arguments to the executable file. And the child process, now, should execute the file by passing those command line arguments.
+int main(int argc, char *argv[]) {
+    int status;
+    char line[MAX_LINE_LENGTH];
 
+    while (1) {
+        printf("Enter command and arguments: ");
+        fflush(stdout); 
+
+        if (fgets(line, sizeof(line), stdin) == NULL) {
+            perror("fgets error");
+            break;
+        }
+
+        // Remove trailing newline character, if present
+        size_t len = strlen(line);
+        if (len > 0 && line[len - 1] == '\n') {
+            line[len - 1] = '\0';
+        }
+
+        // Tokenize the input line
+        char *args[MAX_ARGS + 1];
+        char *token = strtok(line, " "); // Tokenize by space
+        int i = 0;
+
+        while (token != NULL && i < MAX_ARGS) {
+            args[i] = token;
+            token = strtok(NULL, " ");
+            i++;
+        }
+
+        args[i] = NULL; // Null-terminate the argument list
+
+        if (args[0] == NULL) {
+            continue;
+        }
+
+        pid_t pid = fork();
+
+        if (pid == -1) {
+            perror("fork failed");
+            continue; 
+        }
+
+        if (pid == 0) {
+            // Child process
+            execvp(args[0], args);
+            perror("execvp failed");
+            exit(99); 
+        } else {
+            // Parent process
+            pid_t wpid = wait(&status);
+
+            if (wpid == -1) {
+                perror("wait failed");
+                continue; 
+            }
+
+            if (WIFEXITED(status)) {
+                printf("Child process exited with status %d\n", WEXITSTATUS(status));
+            } else if (WIFSIGNALED(status)) {
+                printf("Child process was terminated by signal %d\n", WTERMSIG(status));
+            }
+        }
+    }
+
+    return 0;
+}

@@ -13,7 +13,9 @@
 
 
 
-int shmid; /* stores the id of the  shared memory segment as returned by shmget(). this variable is defined globally so that signal handler can access it for releasing the shared memory segment. */
+int shmid; 
+/* stores the id of the  shared memory segment as returned by shmget(). this variable is defined globally so 
+that signal handler can access it for releasing the shared memory segment. */
 
 /* following is a signal handler for the keypress ^C, that is, ctrl-c */
 typedef void (*sighandler_t)(int);
@@ -40,7 +42,7 @@ void releaseSHM(int signum) {
                 fprintf(stderr, "kill(2) returned wrong value.\n");
         }
 }
-                                                                                                                             1,1           Top
+                                                                                                        
 
 int main() {
         int status;
@@ -83,7 +85,7 @@ int main() {
                 for (i=0; i<50; i++) {
                         printf("Child Reads %d.\n", *pi_child);
                         getchar();
-                                                                                                                             84,4-25       60%
+                                                                                                        
                 }
                 exit(0);
 
