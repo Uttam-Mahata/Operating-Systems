@@ -52,7 +52,7 @@ int main() {
 	Vop.sem_flg = SEM_UNDO;
 
 	// key_t ftok(const char *pathname, int proj_id);
-	mykey = ftok("/home/manas/Documents/Operating Systems/samples/sem/sem1.c", 1);
+	mykey = ftok("/home/uttammahata/OS-LAB/Assignment-6-Semaphore/sem1.c", 1);
 	
 	if (mykey == -1) {
 		perror("ftok() failed");
@@ -71,6 +71,7 @@ int main() {
 	if(status == -1) {
 		perror("semctl() failed");
 		exit(1);
+
 	}
 
 	pid = fork();
