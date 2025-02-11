@@ -96,8 +96,6 @@ After fork, both processes have their file pointers at the beginning of line 2
 When they read subsequently, they each get different lines because they maintain separate file positions
 4. 
 No, when P1 closes the file, it remains open for P2. This is because after fork():
-
-
 Each process has its own file descriptor table
 The close operation in one process doesn't affect the other
 Each process must close its own file descriptor
