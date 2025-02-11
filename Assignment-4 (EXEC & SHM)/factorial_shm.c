@@ -73,6 +73,11 @@ int main() {
 
     pid = fork();
 
+    if(pid == -1) {
+        perror("fork() failed");
+        exit(1);
+    }
+
     if (pid == 0) { // Child process
         printf("Child process started.\n");
         while (1) {
