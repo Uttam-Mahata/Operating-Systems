@@ -42,7 +42,12 @@ int get_semaphore_id(const char *filename, int project_id, int semnum, int creat
     if (create_flag) {
         flags |= IPC_CREAT;
     }
-
+    /* int semget(key_t key, int nsems, int semflg);
+    
+    DESCRIPTION
+           The  semget() system call returns the System V semaphore set identifier
+           associated with the argument key. */
+           
     int semid = semget(key, semnum, flags);
     if (semid == -1) {
         perror("semget() failed");
