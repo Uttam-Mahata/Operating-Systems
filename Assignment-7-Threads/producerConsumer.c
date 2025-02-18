@@ -165,6 +165,14 @@ void *producer(void *param)
 
         data = rand() % 100;
         enQ(&sharedQueue, data);
+
+        printf("Enqueued Data: \n");
+        for (int i = sharedQueue.front; i != sharedQueue.rear; i = (i + 1) % QUEUE_SIZE)
+        {
+            printf("%d ", sharedQueue.data[i]);
+        }
+
+
         fprintf(stderr, "Producer added data %d to the queue.\n", data);
 
         /* int pthread_mutex_unlock(pthread_mutex_t *mutex); */
