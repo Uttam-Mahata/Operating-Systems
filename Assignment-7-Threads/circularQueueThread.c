@@ -1,9 +1,3 @@
-/* Implementation of a circular queue to be used by multiple threads of a process.
- * The queue is implemented using a fixed size array and a mutex lock to ensure
- * thread safety. The queue is implemented as a circular queue to avoid the need
- * to shift elements when adding or removing elements from the queue.
- */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -17,8 +11,8 @@ typedef struct {
     int front;
     int rear;
     pthread_mutex_t lock;
-    pthread_cond_t notEmpty;
-    pthread_cond_t notFull;
+    pthread_cond_t notEmpty; // Condition variable to wait on when the queue is empty.
+    pthread_cond_t notFull; // Condition variable to wait on when the queue is full.
 } Queue;
 
 Queue queue;
@@ -27,6 +21,7 @@ Queue queue;
 void initQueue(Queue *queue) {
     queue->front = 0;
     queue->rear = 0;
+    /* Initialize the mutex and condition variables. */
     pthread_mutex_init(&queue->lock, NULL);
     pthread_cond_init(&queue->notEmpty, NULL);
     pthread_cond_init(&queue->notFull, NULL);
@@ -34,12 +29,16 @@ void initQueue(Queue *queue) {
 /* Add an element to the queue. */
 void enqueue(Queue *queue, int data) {
     pthread_mutex_lock(&queue->lock);
+    /* Wait while the queue is full. */
     while ((queue->rear + 1) % QUEUE_SIZE == queue->front) {
 	pthread_cond_wait(&queue->notFull, &queue->lock);
     }
+    /* Add the data to the queue. */       
     queue->data[queue->rear] = data;
     queue->rear = (queue->rear + 1) % QUEUE_SIZE;
+    /* Signal that the queue is not empty. */
     pthread_cond_signal(&queue->notEmpty);
+    /* Unlock the mutex. */
     pthread_mutex_unlock(&queue->lock);
 }
 /* Remove an element from the queue. */
