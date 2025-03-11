@@ -85,7 +85,7 @@ int main() {
                 status =  getNthRec(ifd, &(reg2.rs[reg2.count]), i);
                 if(status == 0) {
 
-                                        fprintf(stderr, "Cannot read %dth record!\n", i+1);
+                fprintf(stderr, "Cannot read %dth record!\n", i+1);
                 } else  {
                         reg2.count++;
                 }
