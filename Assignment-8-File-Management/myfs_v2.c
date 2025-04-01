@@ -32,7 +32,6 @@ typedef struct SuperBlock {
     int num_blocks;       
     int root_dir_block;
     int first_free_block; 
-    time_t creation_time;
 } SuperBlock;
 
 typedef struct Descriptor {
@@ -785,7 +784,6 @@ int mymkfs_impl(const char *fname, int block_size, int no_of_blocks) {
     sb.num_blocks = no_of_blocks; // Number of *data* blocks
     sb.root_dir_block = 1; // Root directory data starts at block 1 (relative to start of FS)
     sb.first_free_block = (no_of_blocks >= 2) ? 2 : 0; // Free list starts at block 2 if available (Blocks: 0=SB, 1=Root, 2=Free...)
-    sb.creation_time = time(NULL); // Set creation time
 
     // Write Super Block (Block 0)
     if (write_superblock(fd, &sb) != 0) {
