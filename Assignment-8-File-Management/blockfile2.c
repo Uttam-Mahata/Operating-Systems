@@ -7,11 +7,11 @@
 #include <sys/stat.h>
 
 // Function prototypes
-int init_file_dd(const char *fname, int bsize, int bno);
-int get_freeblock(const char *fname);
-int free_block(const char *fname, int bno);
-int check_fs(const char *fname);
-void demonstrate_functions(const char *fname);
+int initFileDD(const char *fname, int bsize, int bno);
+int getFreeBlock(const char *fname);
+int freeBlock(const char *fname, int bno);
+int checkfs(const char *fname);
+void demoFunc(const char *fname);
 
 // Structure to hold file metadata
 typedef struct {
@@ -22,7 +22,7 @@ typedef struct {
     unsigned char ub[]; // bitmap for block status (1 bit per block)
 } file_metadata;
 
-int get_metadata_size(int n) {
+int getMetadataSize(int n) {
     // Calculate how many bytes we need for the bitmap
     // Each byte can store 8 blocks' status
     int bitmap_bytes = (n + 7) / 8;
@@ -30,7 +30,7 @@ int get_metadata_size(int n) {
 }
 
 file_metadata* read_metadata(int fd, int n) {
-    int meta_size = get_metadata_size(n);
+    int meta_size = getMetadataSize(n);
     file_metadata* metadata = (file_metadata*)malloc(meta_size);
     
     if (!metadata) {
@@ -48,8 +48,8 @@ file_metadata* read_metadata(int fd, int n) {
     return metadata;
 }
 
-int write_metadata(int fd, file_metadata* metadata, int n) {
-    int meta_size = get_metadata_size(n);
+int writeMetadata(int fd, file_metadata* metadata, int n) {
+    int meta_size = getMetadataSize(n);
     
     lseek(fd, 0, SEEK_SET);
     if (write(fd, metadata, meta_size) != meta_size) {
@@ -62,7 +62,7 @@ int write_metadata(int fd, file_metadata* metadata, int n) {
 
 
 // check if a block is free
-int is_block_free(file_metadata* metadata, int block_num) {
+int isBlockFree(file_metadata* metadata, int block_num) {
     int byte_idx = block_num / 8;
     int bit_idx = block_num % 8;
     
@@ -70,7 +70,7 @@ int is_block_free(file_metadata* metadata, int block_num) {
     return !(metadata->ub[byte_idx] & (1 << bit_idx));
 }
 
-void set_block_used(file_metadata* metadata, int block_num) {
+void setBlockUsed(file_metadata* metadata, int block_num) {
     int byte_idx = block_num / 8;
     int bit_idx = block_num % 8;
     
@@ -80,7 +80,7 @@ void set_block_used(file_metadata* metadata, int block_num) {
     metadata->fbn--;
 }
 
-void set_block_free(file_metadata* metadata, int block_num) {
+void setBlockFree(file_metadata* metadata, int block_num) {
     int byte_idx = block_num / 8;
     int bit_idx = block_num % 8;
     
@@ -90,13 +90,13 @@ void set_block_free(file_metadata* metadata, int block_num) {
     metadata->fbn++;
 }
 
-int init_file_dd(const char *fname, int bsize, int bno) {
+int initFileDD(const char *fname, int bsize, int bno) {
     if (bno <= 0 || bsize <= 0) {
         fprintf(stderr, "Invalid block size or block number\n");
         return -1;
     }
     
-    int meta_size = get_metadata_size(bno);
+    int meta_size = getMetadataSize(bno);
     off_t total_size = meta_size + ((off_t)bno * bsize);
     
     // Create and open the file
@@ -118,7 +118,7 @@ int init_file_dd(const char *fname, int bsize, int bno) {
     metadata->ubn = 0;
     metadata->fbn = bno;
     
-    if (write_metadata(fd, metadata, bno) != 0) {
+    if (writeMetadata(fd, metadata, bno) != 0) {
         free(metadata);
         close(fd);
         return -1;
@@ -137,7 +137,7 @@ int init_file_dd(const char *fname, int bsize, int bno) {
     return 0;
 }
 
-int get_freeblock(const char *fname) {
+int getFreeBlock(const char *fname) {
     // Open the file
     int fd = open(fname, O_RDWR);
     if (fd == -1) {
@@ -161,17 +161,17 @@ int get_freeblock(const char *fname) {
     }
     
     // Look for a free block
-    int free_block = -1;
+    int freeBlock = -1;
     for (int i = 0; i < metadata->n; i++) {
-        if (is_block_free(metadata, i)) {
-            free_block = i;
+        if (isBlockFree(metadata, i)) {
+            freeBlock = i;
             // Mark it as used
-            set_block_used(metadata, i);
+            setBlockUsed(metadata, i);
             break;
         }
     }
     
-    if (free_block == -1) {
+    if (freeBlock == -1) {
         fprintf(stderr, "No free blocks available\n");
         free(metadata);
         close(fd);
@@ -179,7 +179,7 @@ int get_freeblock(const char *fname) {
     }
     
     // Update metadata in the file
-    if (write_metadata(fd, metadata, n) != 0) {
+    if (writeMetadata(fd, metadata, n) != 0) {
         free(metadata);
         close(fd);
         return -1;
@@ -188,11 +188,11 @@ int get_freeblock(const char *fname) {
     // Clean up and return the found free block
     free(metadata);
     close(fd);
-    return free_block;
+    return freeBlock;
 }
 
 // Function to mark a block as free
-int free_block(const char *fname, int bno) {
+int freeBlock(const char *fname, int bno) {
     // Open the file
     int fd = open(fname, O_RDWR);
     if (fd == -1) {
@@ -224,7 +224,7 @@ int free_block(const char *fname, int bno) {
     }
     
     // Check if the block is already free
-    if (is_block_free(metadata, bno)) {
+    if (isBlockFree(metadata, bno)) {
         fprintf(stderr, "Block %d is already free\n", bno);
         free(metadata);
         close(fd);
@@ -232,10 +232,10 @@ int free_block(const char *fname, int bno) {
     }
     
     // Mark the block as free
-    set_block_free(metadata, bno);
+    setBlockFree(metadata, bno);
     
     // Update metadata in the file
-    if (write_metadata(fd, metadata, n) != 0) {
+    if (writeMetadata(fd, metadata, n) != 0) {
         free(metadata);
         close(fd);
         return -1;
@@ -248,7 +248,7 @@ int free_block(const char *fname, int bno) {
 }
 
 // Function to check the integrity of the file
-int check_fs(const char *fname) {
+int checkfs(const char *fname) {
     // Open the file
     int fd = open(fname, O_RDONLY);
     if (fd == -1) {
@@ -277,7 +277,7 @@ int check_fs(const char *fname) {
     int counted_free = 0;
     
     for (int i = 0; i < metadata->n; i++) {
-        if (is_block_free(metadata, i)) {
+        if (isBlockFree(metadata, i)) {
             counted_free++;
         } else {
             counted_used++;
@@ -300,10 +300,10 @@ int check_fs(const char *fname) {
     return 0;
 }
 
-void demonstrate_functions(const char *fname) {
-    // Initialize a file with 10 blocks of 512 bytes each
+void demoFunc(const char *fname) {
+
     printf("Initializing file %s with 2048 blocks of 4096 bytes each...\n", fname);
-    if (init_file_dd(fname, 4096, 2048) != 0) {
+    if (initFileDD(fname, 4096, 2048) != 0) {
         fprintf(stderr, "Failed to initialize file\n");
         return;
     }
@@ -311,7 +311,7 @@ void demonstrate_functions(const char *fname) {
     
     // Check file system integrity
     printf("\nChecking file system integrity...\n");
-    if (check_fs(fname) == 0) {
+    if (checkfs(fname) == 0) {
         printf("File system integrity check passed.\n");
     } else {
         printf("File system integrity check failed.\n");
@@ -322,7 +322,7 @@ void demonstrate_functions(const char *fname) {
     printf("\nAllocating blocks...\n");
     int blocks[5];
     for (int i = 0; i < 5; i++) {
-        blocks[i] = get_freeblock(fname);
+        blocks[i] = getFreeBlock(fname);
         if (blocks[i] == -1) {
             printf("Failed to allocate block %d\n", i);
             return;
@@ -334,7 +334,7 @@ void demonstrate_functions(const char *fname) {
     printf("\nFreeing blocks...\n");
     for (int i = 0; i < 3; i++) {
         printf("Freeing block %d...\n", blocks[i]);
-        if (free_block(fname, blocks[i]) <= 0) {
+        if (freeBlock(fname, blocks[i]) <= 0) {
             printf("Failed to free block %d\n", blocks[i]);
             return;
         }
@@ -343,7 +343,7 @@ void demonstrate_functions(const char *fname) {
     
     // Check file system integrity again
     printf("\nChecking file system integrity after operations...\n");
-    if (check_fs(fname) == 0) {
+    if (checkfs(fname) == 0) {
         printf("File system integrity check passed.\n");
     } else {
         printf("File system integrity check failed.\n");
@@ -353,6 +353,6 @@ void demonstrate_functions(const char *fname) {
 // Main function
 int main() {
     const char* filename = "dd1";
-    demonstrate_functions(filename);
+    demoFunc(filename);
     return 0;
 }

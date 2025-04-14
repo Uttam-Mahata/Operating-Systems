@@ -1,4 +1,5 @@
 /* sem1.c */
+
 #include <stdio.h>
 #include <sys/types.h> /* for semget(2) ftok(3) semop(2) semctl(2) */
 #include <sys/ipc.h> /* for semget(2) ftok(3) semop(2) semctl(2) */
@@ -17,6 +18,7 @@
 
 struct sembuf Pop;
 struct sembuf Vop;
+
 
 
 
@@ -61,6 +63,7 @@ int main() {
 
 	//       int semget(key_t key, int nsems, int semflg);
 	semid = semget(mykey, NO_SEM, IPC_CREAT | 0777);
+	
 	if(semid == -1) {
 		perror("semget() failed");
 		exit(1);

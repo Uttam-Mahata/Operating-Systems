@@ -28,10 +28,10 @@
 
 
 typedef struct SuperBlock {
-    int block_size;
-    int num_blocks;       
-    int root_dir_block;
-    int first_free_block; 
+    int blockSize;
+    int numBlocks;       
+    int rootDirBlock;
+    int firstFreeBlock; 
 } SuperBlock;
 
 typedef struct Descriptor {
@@ -45,87 +45,87 @@ typedef struct Descriptor {
 
 /*Function Prototypes*/
 
-int read_block(int fd, int block_num, void *buf, int block_size);
-int write_block(int fd, int block_num, const void *buf, int block_size);
-int read_superblock(int fd, SuperBlock *sb); // Assumes block 0, block_size 4096 initially to read size
-int write_superblock(int fd, const SuperBlock *sb);
-int allocate_block(int fd, SuperBlock *sb);
-int free_block(int fd, SuperBlock *sb, int block_num);
-int parse_path_spec(const char *full_path_spec, char **myfs_fname, char **internal_path);
-int traverse_path(int fd, const SuperBlock *sb, const char *internal_path, Descriptor *result_desc, char **final_name_part_out);
-int find_entry_in_dir(int fd, const SuperBlock *sb, int dir_start_block, const char *name, Descriptor *desc, int *containing_block, int *offset_in_block);
-int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descriptor *new_desc);
-int remove_entry_from_dir(int fd, const SuperBlock *sb, int parent_dir_block, const char *name);
-int is_directory_empty(int fd, const SuperBlock *sb, int dir_start_block);
+int readBlock(int fd, int blockNum, void *buf, int blockSize);
+int writeBlock(int fd, int blockNum, const void *buf, int blockSize);
+int readSuperBlock(int fd, SuperBlock *sb); // Assumes block 0, blockSize 4096 initially to read size
+int writeSuperBlock(int fd, const SuperBlock *sb);
+int allocateBlock(int fd, SuperBlock *sb);
+int freeBlock(int fd, SuperBlock *sb, int blockNum);
+int parsePathSpec(const char *fullPathSpec, char **myfs_fname, char **internalPath);
+int traversePath(int fd, const SuperBlock *sb, const char *internalPath, Descriptor *resultDesc, char **finalNamePartOut);
+int findEntryInDir(int fd, const SuperBlock *sb, int dirStartBlock, const char *name, Descriptor *desc, int *containingBlock, int *offsetInBlock);
+int addEntryToDir(int fd, SuperBlock *sb, int parentDirBlock, const Descriptor *newDesc);
+int removeEntryFromDir(int fd, const SuperBlock *sb, int parentDirBlock, const char *name);
+int isDirectoryEmpty(int fd, const SuperBlock *sb, int dirStartBlock);
 
 
-int mymkfs_impl(const char *fname, int block_size, int no_of_blocks);
-int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec);
-int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname);
-int myrm_impl(char *myfs_path_spec);
-int mymkdir_impl(char *mydir_path_spec);
-int myrmdir_impl(char *mydir_path_spec);
-int myreadBlock_impl(char *myfname_spec, char *buf, int logical_block_no);
-int mystat_impl(char *myname_spec, char *buf);
+int mymkfs(const char *fname, int blockSize, int noOfBlocks);
+int mycopyTo(const char *linux_fname, char *myfsPathSpec);
+int mycopyFrom(char *myfsPathSpec, const char *linux_fname);
+int myrm(char *myfsPathSpec);
+int mymkdir(char *mydirPathSpec);
+int myrmdir(char *mydirPathSpec);
+int myreadBlock(char *myfnameSpec, char *buf, int logicalBlockNo);
+int myStat(char *mynameSpec, char *buf);
 
 
 int main(int argc, char *argv[]) {
-    char *basename_cmd;
+    char *basename;
     int ret = 0;
 
-    basename_cmd = strrchr(argv[0], '/');
-    if (basename_cmd != NULL) {
-        basename_cmd++;
+    basename = strrchr(argv[0], '/');
+    if (basename != NULL) {
+        basename++;
     } else {
-        basename_cmd = argv[0];
+        basename = argv[0];
     }
 
-    if (strcmp(basename_cmd, "mymkfs") == 0) {
+    if (strcmp(basename, "mymkfs") == 0) {
 if (argc != 4) {
-        fprintf(stderr, "Usage: %s <myfs_filename> <block_size> <num_blocks>\n", argv[0]);
+        fprintf(stderr, "Usage: %s <myfs_filename> <blockSize> <numBlocks>\n", argv[0]);
         exit(1);
 }
-        int block_size = atoi(argv[2]);
-        int num_blocks = atoi(argv[3]);
-        ret = mymkfs_impl(argv[1], block_size, num_blocks);
+        int blockSize = atoi(argv[2]);
+        int numBlocks = atoi(argv[3]);
+        ret = mymkfs(argv[1], blockSize, numBlocks);
     } 
-    else if (strcmp(basename_cmd, "mycopyTo") == 0) {
+    else if (strcmp(basename, "mycopyTo") == 0) {
         if (argc != 3) {
             fprintf(stderr, "Usage: %s <linux_filename> <path/to/myfile@myfs_filename>\n", argv[0]);
             exit(1);
         }
-        ret = mycopyTo_impl(argv[1], argv[2]);
-    } else if (strcmp(basename_cmd, "mycopyFrom") == 0) {
+        ret = mycopyTo(argv[1], argv[2]);
+    } else if (strcmp(basename, "mycopyFrom") == 0) {
         if (argc != 3) {
             fprintf(stderr, "Usage: %s <path/to/myfile@myfs_filename> <linux_filename>\n", argv[0]);
             exit(1);
         }
-        ret = mycopyFrom_impl(argv[1], argv[2]);
-    } else if (strcmp(basename_cmd, "myrm") == 0) {
+        ret = mycopyFrom(argv[1], argv[2]);
+    } else if (strcmp(basename, "myrm") == 0) {
         if (argc != 2) {
             fprintf(stderr, "Usage: %s <path/to/myfile@myfs_filename>\n", argv[0]);
             exit(1);
         }
-        ret = myrm_impl(argv[1]);
-    } else if (strcmp(basename_cmd, "mymkdir") == 0) {
+        ret = myrm(argv[1]);
+    } else if (strcmp(basename, "mymkdir") == 0) {
         if (argc != 2) {
             fprintf(stderr, "Usage: %s <path/to/mydir@myfs_filename>\n", argv[0]);
             exit(1);
         }
-        ret = mymkdir_impl(argv[1]);
-    } else if (strcmp(basename_cmd, "myrmdir") == 0) {
+        ret = mymkdir(argv[1]);
+    } else if (strcmp(basename, "myrmdir") == 0) {
         if (argc != 2) {
             fprintf(stderr, "Usage: %s <path/to/mydir@myfs_filename>\n", argv[0]);
             exit(1);
         }
-        ret = myrmdir_impl(argv[1]);
+        ret = myrmdir(argv[1]);
     } else {
         fprintf(stderr, "%s: Command not found (executable name should be one of mymkfs, mycopyTo, etc.)\n", argv[0]);
         exit(1);
     }
 
     if (ret != 0) {
-        fprintf(stderr, "%s failed.\n", basename_cmd);
+        fprintf(stderr, "%s failed.\n", basename);
         exit(1);
     }
 
@@ -138,49 +138,49 @@ if (argc != 4) {
 
 
 
-int read_block(int fd, int block_num, void *buf, int block_size) {
-    off_t offset = (off_t)block_num * block_size;
+int readBlock(int fd, int blockNum, void *buf, int blockSize) {
+    off_t offset = (off_t)blockNum * blockSize;
     if (lseek(fd, offset, SEEK_SET) == -1) {
-        perror("lseek failed in read_block");
+        perror("lseek failed in readBlock");
         return -1;
     }
-    ssize_t bytes_read = read(fd, buf, block_size);
+    ssize_t bytes_read = read(fd, buf, blockSize);
     if (bytes_read == -1) {
-        perror("read failed in read_block");
+        perror("read failed in readBlock");
         return -1;
     }
-    if (bytes_read < block_size) {
-         // This may happen if reading past EOF, treat as error for FS consistency unless block_num is 0.
-        fprintf(stderr, "Error: Short read in read_block for block %d (expected %d, got %zd)\n", block_num, block_size, bytes_read);
+    if (bytes_read < blockSize) {
+         // This may happen if reading past EOF, treat as error for FS consistency unless blockNum is 0.
+        fprintf(stderr, "Error: Short read in readBlock for block %d (expected %d, got %zd)\n", blockNum, blockSize, bytes_read);
         return -1;
     }
     return 0;
 }
 
-int write_block(int fd, int block_num, const void *buf, int block_size) {
-    off_t offset = (off_t)block_num * block_size;
+int writeBlock(int fd, int blockNum, const void *buf, int blockSize) {
+    off_t offset = (off_t)blockNum * blockSize;
     if (lseek(fd, offset, SEEK_SET) == -1) {
-        perror("lseek failed in write_block");
+        perror("lseek failed in writeBlock");
         return -1;
     }
-    ssize_t bytes_written = write(fd, buf, block_size);
-    if (bytes_written == -1) {
-        perror("write failed in write_block");
+    ssize_t bytesWritten = write(fd, buf, blockSize);
+    if (bytesWritten == -1) {
+        perror("write failed in writeBlock");
         return -1;
     }
-    if (bytes_written < block_size) {
-        fprintf(stderr, "Error: Short write in write_block for block %d (expected %d, got %zd)\n", block_num, block_size, bytes_written);
+    if (bytesWritten < blockSize) {
+        fprintf(stderr, "Error: Short write in writeBlock for block %d (expected %d, got %zd)\n", blockNum, blockSize, bytesWritten);
         // This indicates a serious problem, like disk full mid-write
         return -1; // Treat as an error
     }
     return 0;
 }
 
-int read_superblock(int fd, SuperBlock *sb) {
+int readSuperBlock(int fd, SuperBlock *sb) {
     int initial_block_size_read;
-    // Temporarily read just the first int to find the block_size
+    // Temporarily read just the first int to find the blockSize
     if (lseek(fd, 0, SEEK_SET) == -1) {
-         perror("lseek failed in read_superblock (initial)");
+         perror("lseek failed in readSuperBlock (initial)");
          return -1;
     }
     if (read(fd, &initial_block_size_read, sizeof(int)) != sizeof(int)) {
@@ -197,163 +197,163 @@ int read_superblock(int fd, SuperBlock *sb) {
          return -1;
      }
 
-    char *temp_buf = malloc(initial_block_size_read);
-    if (!temp_buf) {
+    char *tempBuf = malloc(initial_block_size_read);
+    if (!tempBuf) {
         perror("malloc failed for superblock buffer");
         return -1;
     }
     if (lseek(fd, 0, SEEK_SET) == -1) {
-         perror("lseek failed in read_superblock (full)");
-         free(temp_buf);
+         perror("lseek failed in readSuperBlock (full)");
+         free(tempBuf);
          return -1;
     }
-    ssize_t bytes_read = read(fd, temp_buf, initial_block_size_read);
+    ssize_t bytes_read = read(fd, tempBuf, initial_block_size_read);
      if (bytes_read == -1) {
-        perror("read failed in read_superblock (full)");
-        free(temp_buf);
+        perror("read failed in readSuperBlock (full)");
+        free(tempBuf);
         return -1;
     }
     if (bytes_read < initial_block_size_read) {
         fprintf(stderr, "Error: Short read for full superblock (block 0) (expected %d, got %zd)\n", initial_block_size_read, bytes_read);
-        free(temp_buf);
+        free(tempBuf);
         return -1;
     }
 
 
-    memcpy(sb, temp_buf, sizeof(SuperBlock));
-    free(temp_buf);
+    memcpy(sb, tempBuf, sizeof(SuperBlock));
+    free(tempBuf);
 
-    if (sb->block_size != initial_block_size_read) {
-        fprintf(stderr, "Warning: Block size mismatch in superblock struct vs initial read (%d vs %d)\n", sb->block_size,
+    if (sb->blockSize != initial_block_size_read) {
+        fprintf(stderr, "Warning: Block size mismatch in superblock struct vs initial read (%d vs %d)\n", sb->blockSize,
              initial_block_size_read);
          return -1;
     }
-     if (sb->root_dir_block <= 0 || sb->root_dir_block > sb->num_blocks) {
-         fprintf(stderr, "Error: Invalid root directory block number %d in superblock (num_blocks=%d)\n", sb->root_dir_block,
-             sb->num_blocks);
+     if (sb->rootDirBlock <= 0 || sb->rootDirBlock > sb->numBlocks) {
+         fprintf(stderr, "Error: Invalid root directory block number %d in superblock (numBlocks=%d)\n", sb->rootDirBlock,
+             sb->numBlocks);
          return -1;
      }
-     if (sb->first_free_block < 0 || sb->first_free_block > sb->num_blocks) {
-         fprintf(stderr, "Error: Invalid first free block number %d in superblock (num_blocks=%d)\n", sb->first_free_block,
-             sb->num_blocks);
+     if (sb->firstFreeBlock < 0 || sb->firstFreeBlock > sb->numBlocks) {
+         fprintf(stderr, "Error: Invalid first free block number %d in superblock (numBlocks=%d)\n", sb->firstFreeBlock,
+             sb->numBlocks);
          return -1;
      }
 
     return 0;
 }
 
-int write_superblock(int fd, const SuperBlock *sb) {
-    if (sb->block_size < MIN_BLOCK_SIZE) {
-         fprintf(stderr, "Error: Attempting to write invalid block size %d to superblock\n", sb->block_size);
+int writeSuperBlock(int fd, const SuperBlock *sb) {
+    if (sb->blockSize < MIN_BLOCK_SIZE) {
+         fprintf(stderr, "Error: Attempting to write invalid block size %d to superblock\n", sb->blockSize);
          return -1;
      }
-    char *temp_buf = calloc(1, sb->block_size);
-    if (!temp_buf) {
+    char *tempBuf = calloc(1, sb->blockSize);
+    if (!tempBuf) {
         perror("calloc failed for superblock buffer");
         return -1;
     }
-    memcpy(temp_buf, sb, sizeof(SuperBlock));
+    memcpy(tempBuf, sb, sizeof(SuperBlock));
 
-    if (write_block(fd, 0, temp_buf, sb->block_size) != 0) {
+    if (writeBlock(fd, 0, tempBuf, sb->blockSize) != 0) {
         fprintf(stderr, "Failed to write superblock (block 0)\n");
-        free(temp_buf);
+        free(tempBuf);
         return -1;
     }
 
-    free(temp_buf);
+    free(tempBuf);
     return 0;
 }
 
 
-int allocate_block(int fd, SuperBlock *sb) {
-    if (sb->first_free_block == 0) {
+int allocateBlock(int fd, SuperBlock *sb) {
+    if (sb->firstFreeBlock == 0) {
         fprintf(stderr, "Filesystem full: No free blocks available.\n");
         return -1;
     }
 
-    int allocated_block_num = sb->first_free_block;
-    char *block_buf = malloc(sb->block_size);
-    if (!block_buf) {
-        perror("malloc failed in allocate_block");
+    int allocated_block_num = sb->firstFreeBlock;
+    char *blockBuf = malloc(sb->blockSize);
+    if (!blockBuf) {
+        perror("malloc failed in allocateBlock");
         return -1;
     }
 
     // Read the block being allocated to get the *next* free block pointer
-    if (read_block(fd, allocated_block_num, block_buf, sb->block_size) != 0) {
+    if (readBlock(fd, allocated_block_num, blockBuf, sb->blockSize) != 0) {
         fprintf(stderr, "Error reading free block %d during allocation\n", allocated_block_num);
-        free(block_buf);
+        free(blockBuf);
         return -1;
     }
 
 /*The next free block number is stored in the last 4 bytes */
     int next_free_block;
-    memcpy(&next_free_block, block_buf + sb->block_size - sizeof(int), sizeof(int));
+    memcpy(&next_free_block, blockBuf + sb->blockSize - sizeof(int), sizeof(int));
 
 // Update the superblock IN MEMORY first
-sb->first_free_block = next_free_block;
+sb->firstFreeBlock = next_free_block;
 
 // Write the updated superblock to disk
-    if (write_superblock(fd, sb) != 0) {
+    if (writeSuperBlock(fd, sb) != 0) {
         fprintf(stderr, "Error writing superblock after block allocation\n");
-        sb->first_free_block = allocated_block_num;
-        free(block_buf);
+        sb->firstFreeBlock = allocated_block_num;
+        free(blockBuf);
         return -1;
 }
 
 
-free(block_buf);
+free(blockBuf);
 return allocated_block_num;
 }
 
-int free_block(int fd, SuperBlock *sb, int block_num) {
-    if (block_num <= 0 || block_num > sb->num_blocks) {
-        fprintf(stderr, "Error: Attempt to free invalid block number %d (must be 1..%d)\n", block_num, sb->num_blocks);
+int freeBlock(int fd, SuperBlock *sb, int blockNum) {
+    if (blockNum <= 0 || blockNum > sb->numBlocks) {
+        fprintf(stderr, "Error: Attempt to free invalid block number %d (must be 1..%d)\n", blockNum, sb->numBlocks);
         return -1;
     }
-     if (block_num == sb->root_dir_block) {
-         fprintf(stderr, "Warning: Attempt to free root directory block %d. Cannot Remove Directory.\n", block_num);
+     if (blockNum == sb->rootDirBlock) {
+         fprintf(stderr, "Warning: Attempt to free root directory block %d. Cannot Remove Directory.\n", blockNum);
      }
 
 
-    char *block_buf = malloc(sb->block_size);
-    if (!block_buf) {
-        perror("malloc failed in free_block");
+    char *blockBuf = malloc(sb->blockSize);
+    if (!blockBuf) {
+        perror("malloc failed in freeBlock");
         return -1;
     }
-    memset(block_buf, 0, sb->block_size);
+    memset(blockBuf, 0, sb->blockSize);
 
-    int current_head = sb->first_free_block;
-    memcpy(block_buf + sb->block_size - sizeof(int), &current_head, sizeof(int));
+    int current_head = sb->firstFreeBlock;
+    memcpy(blockBuf + sb->blockSize - sizeof(int), &current_head, sizeof(int));
 
-    if (write_block(fd, block_num, block_buf, sb->block_size) != 0) {
-        fprintf(stderr, "Error writing block %d during free operation\n", block_num);
-        free(block_buf);
+    if (writeBlock(fd, blockNum, blockBuf, sb->blockSize) != 0) {
+        fprintf(stderr, "Error writing block %d during free operation\n", blockNum);
+        free(blockBuf);
         return -1;
     }
-    free(block_buf);
+    free(blockBuf);
 
-    sb->first_free_block = block_num;
+    sb->firstFreeBlock = blockNum;
 
     // Write the updated superblock to disk
-    if (write_superblock(fd, sb) != 0) {
-        fprintf(stderr, "Error writing superblock after freeing block %d\n", block_num);
-        sb->first_free_block = current_head;
+    if (writeSuperBlock(fd, sb) != 0) {
+        fprintf(stderr, "Error writing superblock after freeing block %d\n", blockNum);
+        sb->firstFreeBlock = current_head;
         return -1;
     }
 
     return 0;
 }
 
-int parse_path_spec(const char *full_path_spec, char **myfs_fname, char **internal_path) {
-    char *at_symbol = strrchr(full_path_spec, '@');
+int parsePathSpec(const char *fullPathSpec, char **myfs_fname, char **internalPath) {
+    char *at_symbol = strrchr(fullPathSpec, '@');
     if (at_symbol == NULL) {
-        fprintf(stderr, "Invalid format: Missing '@' in path specification '%s'\n", full_path_spec);
+        fprintf(stderr, "Invalid format: Missing '@' in path specification '%s'\n", fullPathSpec);
         return -1;
     }
 
     // Use strndup to avoid modifying the original string and handle allocation
-    *internal_path = strndup(full_path_spec, at_symbol - full_path_spec);
-    if (*internal_path == NULL) {
+    *internalPath = strndup(fullPathSpec, at_symbol - fullPathSpec);
+    if (*internalPath == NULL) {
         perror("strndup failed for internal path");
         return -1;
     }
@@ -361,37 +361,37 @@ int parse_path_spec(const char *full_path_spec, char **myfs_fname, char **intern
     *myfs_fname = strdup(at_symbol + 1);
     if (*myfs_fname == NULL) {
         perror("strdup failed for myfs filename");
-        free(*internal_path); // Clean up previous allocation
-        *internal_path = NULL;
+        free(*internalPath); // Clean up previous allocation
+        *internalPath = NULL;
         return -1;
     }
 
     if (strlen(*myfs_fname) == 0) {
-        fprintf(stderr, "Invalid format: Missing myfs filename after '@' in '%s'\n", full_path_spec);
-        free(*internal_path);
+        fprintf(stderr, "Invalid format: Missing myfs filename after '@' in '%s'\n", fullPathSpec);
+        free(*internalPath);
         free(*myfs_fname);
-        *internal_path = NULL;
+        *internalPath = NULL;
         *myfs_fname = NULL;
         return -1;
     }
     // Allow empty internal path [refers to root content]
      // Ensuring internal path starts with / if not empty
      // This simplifies traversal logic slightly.
-    if (strlen(*internal_path) > 0 && (*internal_path)[0] != '/') {
-         char *temp = malloc(strlen(*internal_path) + 2); // Space for '/' and '\0'
+    if (strlen(*internalPath) > 0 && (*internalPath)[0] != '/') {
+         char *temp = malloc(strlen(*internalPath) + 2); // Space for '/' and '\0'
          if(!temp) {
              perror("malloc failed for path adjustment");
-             free(*internal_path); free(*myfs_fname); return -1;
+             free(*internalPath); free(*myfs_fname); return -1;
          }
-         sprintf(temp, "/%s", *internal_path);
-         free(*internal_path);
-         *internal_path = temp;
+         sprintf(temp, "/%s", *internalPath);
+         free(*internalPath);
+         *internalPath = temp;
     }
-     else if (strlen(*internal_path) == 0) {
+     else if (strlen(*internalPath) == 0) {
          // Standardize empty path to "/"
-         free(*internal_path);
-         *internal_path = strdup("/");
-          if(!*internal_path) {
+         free(*internalPath);
+         *internalPath = strdup("/");
+          if(!*internalPath) {
              perror("strdup failed for root path");
              free(*myfs_fname); return -1;
           }
@@ -403,24 +403,24 @@ int parse_path_spec(const char *full_path_spec, char **myfs_fname, char **intern
 
 
 // Finds an entry within a specific directory's block chain.
-int find_entry_in_dir(int fd, const SuperBlock *sb, int dir_start_block, const char *name, Descriptor *desc, int *containing_block, int *offset_in_block) {
-    int current_block_num = dir_start_block;
-    char *dir_buf = malloc(sb->block_size);
+int findEntryInDir(int fd, const SuperBlock *sb, int dirStartBlock, const char *name, Descriptor *desc, int *containingBlock, int *offsetInBlock) {
+    int current_block_num = dirStartBlock;
+    char *dir_buf = malloc(sb->blockSize);
     if (!dir_buf) {
-        perror("malloc failed in find_entry_in_dir");
+        perror("malloc failed in findEntryInDir");
         return -2; 
     }
 
     while (current_block_num != 0) {
-        if (read_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+        if (readBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
             fprintf(stderr, "Error reading directory block %d\n", current_block_num);
             free(dir_buf);
             return -2;
         }
 
-        int num_descriptors_per_block = (sb->block_size - sizeof(int)) / DESCRIPTOR_SIZE;
+        int num_descriptors_per_block = (sb->blockSize - sizeof(int)) / DESCRIPTOR_SIZE;
          if (DESCRIPTOR_SIZE == 0) num_descriptors_per_block = 0; 
-         else num_descriptors_per_block = (sb->block_size - sizeof(int)) / DESCRIPTOR_SIZE;
+         else num_descriptors_per_block = (sb->blockSize - sizeof(int)) / DESCRIPTOR_SIZE;
 
         for (int i = 0; i < num_descriptors_per_block; ++i) {
             int current_offset = i * DESCRIPTOR_SIZE;
@@ -430,18 +430,18 @@ int find_entry_in_dir(int fd, const SuperBlock *sb, int dir_start_block, const c
                 if (desc) {
                     memcpy(desc, current_desc, sizeof(Descriptor));
                 }
-                if (containing_block) {
-                    *containing_block = current_block_num;
+                if (containingBlock) {
+                    *containingBlock = current_block_num;
                 }
-                if (offset_in_block) {
-                    *offset_in_block = current_offset;
+                if (offsetInBlock) {
+                    *offsetInBlock = current_offset;
                 }
                 free(dir_buf);
                 return 0; // Found
             }
         }
 
-        memcpy(&current_block_num, dir_buf + sb->block_size - sizeof(int), sizeof(int)); // Fixed: & added
+        memcpy(&current_block_num, dir_buf + sb->blockSize - sizeof(int), sizeof(int)); // Fixed: & added
     }
 
     free(dir_buf);
@@ -449,35 +449,35 @@ int find_entry_in_dir(int fd, const SuperBlock *sb, int dir_start_block, const c
 }
 
 
-int traverse_path(int fd, const SuperBlock *sb, const char *internal_path, Descriptor *result_desc, char **final_name_part_out) {
-    char *path_copy = strdup(internal_path); // Need mutable copy for strtok
-    if (!path_copy) { perror("strdup failed in traverse_path"); return -5; }
+int traversePath(int fd, const SuperBlock *sb, const char *internalPath, Descriptor *resultDesc, char **finalNamePartOut) {
+    char *pathCopy = strdup(internalPath); // Need mutable copy for strtok
+    if (!pathCopy) { perror("strdup failed in traversePath"); return -5; }
 
-    int current_dir_block = sb->root_dir_block;
-    int parent_dir_block = sb->root_dir_block; // Root's parent is root for this logic
+    int current_dir_block = sb->rootDirBlock;
+    int parentDirBlock = sb->rootDirBlock; // Root's parent is root for this logic
     char *final_name_part = NULL; // Store the last component name
     char *last_found_name = NULL; // Store the name of the last component successfully found
 
     // Handle root case explicitly first
-    if (strcmp(path_copy, "/") == 0) {
-         if (result_desc) { // Create a pseudo-descriptor for root
-             result_desc->type = TYPE_DIR;
-             strncpy(result_desc->name, "/", MAX_FILENAME_LEN);
-             result_desc->name[MAX_FILENAME_LEN -1] = '\0';
-             result_desc->first_block = sb->root_dir_block;
-             result_desc->size = 0; // Size maybe irrelevant for root dir itself
+    if (strcmp(pathCopy, "/") == 0) {
+         if (resultDesc) { // Create a pseudo-descriptor for root
+             resultDesc->type = TYPE_DIR;
+             strncpy(resultDesc->name, "/", MAX_FILENAME_LEN);
+             resultDesc->name[MAX_FILENAME_LEN -1] = '\0';
+             resultDesc->first_block = sb->rootDirBlock;
+             resultDesc->size = 0; // Size maybe irrelevant for root dir itself
          }
-         if (final_name_part_out) *final_name_part_out = strdup("/"); // Caller must free
-         free(path_copy);
+         if (finalNamePartOut) *finalNamePartOut = strdup("/"); // Caller must free
+         free(pathCopy);
          return 0; // Indicate root itself was the target
     }
 
     // Use strtok_r for reentrancy (good practice)
     char *token;
     char *saveptr; // for strtok_r
-    char *path_to_tokenize = path_copy;
+    char *path_to_tokenize = pathCopy;
 
-    // Skip leading '/' if present (should be, based on parse_path_spec adjustment)
+    // Skip leading '/' if present (should be, based on parsePathSpec adjustment)
     if (path_to_tokenize[0] == '/') path_to_tokenize++;
 
     Descriptor current_entry_desc;
@@ -492,12 +492,12 @@ int traverse_path(int fd, const SuperBlock *sb, const char *internal_path, Descr
          }
          if (strlen(token) >= MAX_FILENAME_LEN) {
               fprintf(stderr, "Error: Path component '%s' exceeds maximum length (%d)\n", token, MAX_FILENAME_LEN-1);
-              free(path_copy);
+              free(pathCopy);
               return -5; // Or a specific error code for bad path component
          }
 
          // Find the token in the current_dir_block
-         find_status = find_entry_in_dir(fd, sb, current_dir_block, token, &current_entry_desc, NULL, NULL); // Fixed: & added
+         find_status = findEntryInDir(fd, sb, current_dir_block, token, &current_entry_desc, NULL, NULL); // Fixed: & added
 
          if (find_status == 0) { // Found the token
              // Record the name we just found
@@ -509,43 +509,43 @@ int traverse_path(int fd, const SuperBlock *sb, const char *internal_path, Descr
              if (next_token != NULL) { // More path components follow
                  if (current_entry_desc.type == TYPE_DIR) {
                      // It's a directory, descend into it
-                     parent_dir_block = current_dir_block; // Update parent before descending
+                     parentDirBlock = current_dir_block; // Update parent before descending
                      current_dir_block = current_entry_desc.first_block;
                      token = next_token; // Continue loop with the next token
                  } else {
                      // It's a file, but not the last component. Error.
-                     fprintf(stderr, "Error: Cannot traverse through file '%s' in path '%s'\n", token, internal_path);
+                     fprintf(stderr, "Error: Cannot traverse through file '%s' in path '%s'\n", token, internalPath);
                      if(last_found_name) free(last_found_name);
-                     free(path_copy);
+                     free(pathCopy);
                      return -2; // Invalid path component type
                  }
              } else { // This was the last token and it was found
-                 if (result_desc) memcpy(result_desc, &current_entry_desc, sizeof(Descriptor)); // Fixed: & added
-                 if (final_name_part_out) *final_name_part_out = strdup(token); // Caller must free
+                 if (resultDesc) memcpy(resultDesc, &current_entry_desc, sizeof(Descriptor)); // Fixed: & added
+                 if (finalNamePartOut) *finalNamePartOut = strdup(token); // Caller must free
                  if(last_found_name) free(last_found_name);
-                 free(path_copy);
+                 free(pathCopy);
                  // Return the block number of the directory containing the found entry
                  return current_dir_block;
              }
          } else if (find_status == -1) { // Token not found in current directory
              char* next_token = strtok_r(NULL, "/", &saveptr);
              if (next_token != NULL) { // An intermediate component was missing
-                 fprintf(stderr, "Error: Path component '%s' not found in '%s'\n", token, internal_path);
+                 fprintf(stderr, "Error: Path component '%s' not found in '%s'\n", token, internalPath);
                  if(last_found_name) free(last_found_name);
-                 free(path_copy);
+                 free(pathCopy);
                  return -1; // Intermediate component missing
              } else {
                  // It was the last token and it wasn't found. This is okay for creation ops.
-                 if (final_name_part_out) *final_name_part_out = strdup(token); // Caller must free
+                 if (finalNamePartOut) *finalNamePartOut = strdup(token); // Caller must free
                  if(last_found_name) free(last_found_name);
-                 free(path_copy);
+                 free(pathCopy);
                  // Return the block number of the directory where it *should* be created
                  return current_dir_block;
              }
-         } else { // find_entry_in_dir reported an error (-2)
+         } else { // findEntryInDir reported an error (-2)
              fprintf(stderr, "Error reading directory block while searching for '%s'\n", token);
              if(last_found_name) free(last_found_name);
-             free(path_copy);
+             free(pathCopy);
              return -3; // Error reading block
          }
     }
@@ -558,49 +558,49 @@ int traverse_path(int fd, const SuperBlock *sb, const char *internal_path, Descr
     // This case indicates the path successfully resolved to an existing directory
     // *before* the last token was processed (or the last token was empty).
     // Example: path is "/dir1/", token loop ends after processing "dir1".
-    // current_dir_block is dir1's data block. parent_dir_block is root's block.
+    // current_dir_block is dir1's data block. parentDirBlock is root's block.
     // We need the descriptor of "dir1".
 
     if (last_found_name) { // We successfully found at least one component
          // Re-find the descriptor for the last successfully found component in its parent
          Descriptor last_dir_desc;
-         if (find_entry_in_dir(fd, sb, parent_dir_block, last_found_name, &last_dir_desc, NULL, NULL) == 0) {
-              if (result_desc) memcpy(result_desc, &last_dir_desc, sizeof(Descriptor));
+         if (findEntryInDir(fd, sb, parentDirBlock, last_found_name, &last_dir_desc, NULL, NULL) == 0) {
+              if (resultDesc) memcpy(resultDesc, &last_dir_desc, sizeof(Descriptor));
          } else {
               fprintf(stderr,"Internal inconsistency: couldn't re-find last dir %s\n", last_found_name);
               // Fall through might be okay, but indicates logic issue
          }
-         if (final_name_part_out) *final_name_part_out = strdup(last_found_name); // Return name of the final dir found
+         if (finalNamePartOut) *finalNamePartOut = strdup(last_found_name); // Return name of the final dir found
          free(last_found_name);
-         free(path_copy);
-         return parent_dir_block; // Return the parent of the final dir found
+         free(pathCopy);
+         return parentDirBlock; // Return the parent of the final dir found
     } else {
          // This case should technically not be reached due to root handling and path parsing adjustments
-         fprintf(stderr, "Internal error: traverse_path ended unexpectedly for path '%s'\n", internal_path);
-         free(path_copy);
+         fprintf(stderr, "Internal error: traversePath ended unexpectedly for path '%s'\n", internalPath);
+         free(pathCopy);
          return -5;
     }
 }
 
 
 // Adds an entry to a directory chain. Allocates new blocks if needed.
-int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descriptor *new_desc) {
-    int current_block_num = parent_dir_block;
-    int last_block_num = parent_dir_block; // Keep track of the last block in case we need to extend
-    char *dir_buf = malloc(sb->block_size);
-    if (!dir_buf) { perror("malloc failed in add_entry_to_dir"); return -1; }
+int addEntryToDir(int fd, SuperBlock *sb, int parentDirBlock, const Descriptor *newDesc) {
+    int current_block_num = parentDirBlock;
+    int last_block_num = parentDirBlock; // Keep track of the last block in case we need to extend
+    char *dir_buf = malloc(sb->blockSize);
+    if (!dir_buf) { perror("malloc failed in addEntryToDir"); return -1; }
     // int found_slot = 0; // Unused variable
 
     while (current_block_num != 0) {
         last_block_num = current_block_num;
-        if (read_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+        if (readBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
             fprintf(stderr, "Error reading directory block %d while adding entry\n", current_block_num);
             free(dir_buf); return -1;
         }
 
         int num_descriptors_per_block;
          if (DESCRIPTOR_SIZE == 0) num_descriptors_per_block = 0; // Avoid division by zero
-         else num_descriptors_per_block = (sb->block_size - sizeof(int)) / DESCRIPTOR_SIZE;
+         else num_descriptors_per_block = (sb->blockSize - sizeof(int)) / DESCRIPTOR_SIZE;
 
         for (int i = 0; i < num_descriptors_per_block; ++i) {
             int current_offset = i * DESCRIPTOR_SIZE;
@@ -609,8 +609,8 @@ int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descrip
             // Check if descriptor slot is free (type == 0)
             if (current_desc_ptr->type == 0) {
                 // Found an empty slot, write the new descriptor here
-                memcpy(current_desc_ptr, new_desc, sizeof(Descriptor));
-                if (write_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+                memcpy(current_desc_ptr, newDesc, sizeof(Descriptor));
+                if (writeBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
                     fprintf(stderr, "Error writing directory block %d after adding entry\n", current_block_num);
                     // Revert the memcpy? Difficult. Best to just return error.
                     free(dir_buf); return -1;
@@ -621,12 +621,12 @@ int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descrip
             }
         }
         // No empty slot in this block, move to the next block in the chain
-        memcpy(&current_block_num, dir_buf + sb->block_size - sizeof(int), sizeof(int)); // Fixed: & added
+        memcpy(&current_block_num, dir_buf + sb->blockSize - sizeof(int), sizeof(int)); // Fixed: & added
     }
 
     // If we exit the loop, it means no empty slot was found in the entire chain.
     // We need to allocate a new block and add it to the chain.
-    int new_block_num = allocate_block(fd, sb);
+    int new_block_num = allocateBlock(fd, sb);
     if (new_block_num == -1) {
         fprintf(stderr, "Failed to allocate new block for directory extension\n");
         free(dir_buf); return -1;
@@ -634,20 +634,20 @@ int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descrip
 
     // Link the *last* block of the existing chain to this new block
     // We still have the buffer for the 'last_block_num' in dir_buf (read in the last loop iteration)
-    memcpy(dir_buf + sb->block_size - sizeof(int), &new_block_num, sizeof(int));
-    if (write_block(fd, last_block_num, dir_buf, sb->block_size) != 0) {
+    memcpy(dir_buf + sb->blockSize - sizeof(int), &new_block_num, sizeof(int));
+    if (writeBlock(fd, last_block_num, dir_buf, sb->blockSize) != 0) {
         fprintf(stderr, "Error linking last directory block %d to new block %d\n", last_block_num, new_block_num);
         // Try to free the allocated block to avoid leaks, but state is inconsistent
-        free_block(fd, sb, new_block_num); // Best effort rollback
+        freeBlock(fd, sb, new_block_num); // Best effort rollback
         free(dir_buf); return -1;
     }
 
     // Initialize the new block (zero it out, including the next pointer)
-    memset(dir_buf, 0, sb->block_size);
+    memset(dir_buf, 0, sb->blockSize);
     // Add the new descriptor to the *first* slot of the new block
-    memcpy(dir_buf, new_desc, sizeof(Descriptor));
+    memcpy(dir_buf, newDesc, sizeof(Descriptor));
     // Write the new block
-    if (write_block(fd, new_block_num, dir_buf, sb->block_size) != 0) {
+    if (writeBlock(fd, new_block_num, dir_buf, sb->blockSize) != 0) {
         fprintf(stderr, "Error writing initial data to new directory block %d\n", new_block_num);
         // State is inconsistent. Last block points here, but this block is bad.
         // Hard to fully rollback the link written previously.
@@ -659,20 +659,20 @@ int add_entry_to_dir(int fd, SuperBlock *sb, int parent_dir_block, const Descrip
 }
 
 // Removes an entry from a directory chain (marks as empty). Does NOT free data blocks.
-int remove_entry_from_dir(int fd, const SuperBlock *sb, int parent_dir_block, const char *name) {
-     int current_block_num = parent_dir_block;
-     char *dir_buf = malloc(sb->block_size);
-     if (!dir_buf) { perror("malloc failed in remove_entry_from_dir"); return -2; }
+int removeEntryFromDir(int fd, const SuperBlock *sb, int parentDirBlock, const char *name) {
+     int current_block_num = parentDirBlock;
+     char *dir_buf = malloc(sb->blockSize);
+     if (!dir_buf) { perror("malloc failed in removeEntryFromDir"); return -2; }
 
      while (current_block_num != 0) {
-         if (read_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+         if (readBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
              fprintf(stderr, "Error reading directory block %d while removing entry\n", current_block_num);
              free(dir_buf); return -2;
          }
 
          int num_descriptors_per_block;
           if (DESCRIPTOR_SIZE == 0) num_descriptors_per_block = 0; // Avoid division by zero
-          else num_descriptors_per_block = (sb->block_size - sizeof(int)) / DESCRIPTOR_SIZE;
+          else num_descriptors_per_block = (sb->blockSize - sizeof(int)) / DESCRIPTOR_SIZE;
 
          for (int i = 0; i < num_descriptors_per_block; ++i) {
              int current_offset = i * DESCRIPTOR_SIZE;
@@ -688,7 +688,7 @@ int remove_entry_from_dir(int fd, const SuperBlock *sb, int parent_dir_block, co
                  // current_desc_ptr->size = 0; // Optional cleanup
 
 
-                 if (write_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+                 if (writeBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
                      fprintf(stderr, "Error writing directory block %d after removing entry '%s'\n", current_block_num, name);
                      free(dir_buf); return -2;
                  }
@@ -700,7 +700,7 @@ int remove_entry_from_dir(int fd, const SuperBlock *sb, int parent_dir_block, co
              }
          }
          // Not found in this block, move to the next
-         memcpy(&current_block_num, dir_buf + sb->block_size - sizeof(int), sizeof(int)); // Fixed: & added
+         memcpy(&current_block_num, dir_buf + sb->blockSize - sizeof(int), sizeof(int)); // Fixed: & added
      }
 
      free(dir_buf);
@@ -709,20 +709,20 @@ int remove_entry_from_dir(int fd, const SuperBlock *sb, int parent_dir_block, co
 
 
 // Checks if a directory is empty.
-int is_directory_empty(int fd, const SuperBlock *sb, int dir_start_block) {
-    int current_block_num = dir_start_block;
-    char *dir_buf = malloc(sb->block_size);
-    if (!dir_buf) { perror("malloc failed in is_directory_empty"); return -1; }
+int isDirectoryEmpty(int fd, const SuperBlock *sb, int dirStartBlock) {
+    int current_block_num = dirStartBlock;
+    char *dir_buf = malloc(sb->blockSize);
+    if (!dir_buf) { perror("malloc failed in isDirectoryEmpty"); return -1; }
 
     while (current_block_num != 0) {
-        if (read_block(fd, current_block_num, dir_buf, sb->block_size) != 0) {
+        if (readBlock(fd, current_block_num, dir_buf, sb->blockSize) != 0) {
             fprintf(stderr, "Error reading directory block %d while checking if empty\n", current_block_num);
             free(dir_buf); return -1; // Indicate error
         }
 
         int num_descriptors_per_block;
          if (DESCRIPTOR_SIZE == 0) num_descriptors_per_block = 0; // Avoid division by zero
-         else num_descriptors_per_block = (sb->block_size - sizeof(int)) / DESCRIPTOR_SIZE;
+         else num_descriptors_per_block = (sb->blockSize - sizeof(int)) / DESCRIPTOR_SIZE;
 
         for (int i = 0; i < num_descriptors_per_block; ++i) {
             int current_offset = i * DESCRIPTOR_SIZE;
@@ -736,7 +736,7 @@ int is_directory_empty(int fd, const SuperBlock *sb, int dir_start_block) {
             }
         }
         // No entries in this block, check next
-        memcpy(&current_block_num, dir_buf + sb->block_size - sizeof(int), sizeof(int)); // Fixed: & added
+        memcpy(&current_block_num, dir_buf + sb->blockSize - sizeof(int), sizeof(int)); // Fixed: & added
     }
 
     // If we finish the loop, no entries were found
@@ -747,16 +747,17 @@ int is_directory_empty(int fd, const SuperBlock *sb, int dir_start_block) {
 
 // --- Filesystem Operation Implementations ---
 
-int mymkfs_impl(const char *fname, int block_size, int no_of_blocks) {
-    if (block_size < MIN_BLOCK_SIZE) {
-        fprintf(stderr, "Error: Block size %d is too small (minimum %d required).\n", block_size, MIN_BLOCK_SIZE);
+int mymkfs(const char *fname, int blockSize, int noOfBlocks) {
+    if (blockSize < MIN_BLOCK_SIZE) {
+        fprintf(stderr, "Error: Block size %d is too small (minimum %d required).\n", blockSize, MIN_BLOCK_SIZE);
         return -1;
     }
-    if (block_size % 4 != 0) {
+    if (blockSize % 4 != 0) {
         // While not strictly necessary for this impl, aligned block sizes are conventional
-        fprintf(stderr, "Warning: Block size %d is not a multiple of 4. This might be inefficient.\n", block_size);
+        fprintf(stderr, "Warning: Block size %d is not a multiple of 4. This might be inefficient.\n", blockSize);
     }
-    if (no_of_blocks < 1) { // Need at least 1 block for root directory data
+
+    if (noOfBlocks < 1) { // Need at least 1 block for root directory data
         fprintf(stderr, "Error: Number of data blocks must be at least 1 (for root directory).\n");
         return -1;
     }
@@ -768,8 +769,8 @@ int mymkfs_impl(const char *fname, int block_size, int no_of_blocks) {
     }
 
     // Calculate total size and truncate the file
-    // Total blocks = 1 (SB) + no_of_blocks (Data)
-    off_t total_size = (off_t)(no_of_blocks + 1) * block_size;
+    // Total blocks = 1 (SB) + noOfBlocks (Data)
+    off_t total_size = (off_t)(noOfBlocks + 1) * blockSize;
     if (ftruncate(fd, total_size) == -1) {
         perror("Error truncating file for mymkfs");
         close(fd);
@@ -780,71 +781,80 @@ int mymkfs_impl(const char *fname, int block_size, int no_of_blocks) {
     // Prepare Super Block
     SuperBlock sb;
     memset(&sb, 0, sizeof(SuperBlock)); // Zero out structure
-    sb.block_size = block_size;
-    sb.num_blocks = no_of_blocks; // Number of *data* blocks
-    sb.root_dir_block = 1; // Root directory data starts at block 1 (relative to start of FS)
-    sb.first_free_block = (no_of_blocks >= 2) ? 2 : 0; // Free list starts at block 2 if available (Blocks: 0=SB, 1=Root, 2=Free...)
+    sb.blockSize = blockSize;
+    sb.numBlocks = noOfBlocks; // Number of *data* blocks
+    sb.rootDirBlock = 1; // Root directory data starts at block 1 (relative to start of FS)
+    sb.firstFreeBlock = (noOfBlocks >= 2) ? 2 : 0; // Free list starts at block 2 if available (Blocks: 0=SB, 1=Root, 2=Free...)
 
     // Write Super Block (Block 0)
-    if (write_superblock(fd, &sb) != 0) {
+    if (writeSuperBlock(fd, &sb) != 0) {
         fprintf(stderr, "Error writing superblock during mkfs\n");
-        close(fd); unlink(fname); return -1;
+        close(fd); unlink(fname); 
+        return -1;
     }
 
     // Initialize Root Directory (Block 1)
-    char *block_buf = calloc(1, block_size); // Use calloc to zero out
-    if (!block_buf) { perror("calloc failed for root dir buffer"); close(fd); unlink(fname); return -1; }
+    char *blockBuf = calloc(1, blockSize); // Use calloc to zero out
+    if (!blockBuf) { 
+        perror("calloc failed for root dir buffer"); 
+        close(fd); 
+        unlink(fname); 
+        return -1; 
+    }
     // Next pointer is already 0 due to calloc, indicating end of chain for root dir initially
-    if (write_block(fd, sb.root_dir_block, block_buf, block_size) != 0) {
+    if (writeBlock(fd, sb.rootDirBlock, blockBuf, blockSize) != 0) {
         fprintf(stderr, "Error writing root directory block during mkfs\n");
-        free(block_buf); close(fd); unlink(fname); return -1;
+        free(blockBuf);
+        close(fd); 
+        unlink(fname); 
+        return -1;
     }
 
-    // Initialize Free Block List (Blocks 2 to no_of_blocks)
+    // Initialize Free Block List (Blocks 2 to noOfBlocks)
     // Block i points to block i+1, last data block points to 0.
-    for (int i = 2; i <= no_of_blocks; ++i) {
-        memset(block_buf, 0, block_size); // Clear buffer
-        int next_free = (i == no_of_blocks) ? 0 : i + 1; // Point to next block or 0 if last data block
-        memcpy(block_buf + block_size - sizeof(int), &next_free, sizeof(int));
-        if (write_block(fd, i, block_buf, block_size) != 0) {
+    for (int i = 2; i <= noOfBlocks; ++i) {
+        memset(blockBuf, 0, blockSize); // Clear buffer
+        int next_free = (i == noOfBlocks) ? 0 : i + 1; // Point to next block or 0 if last data block
+        memcpy(blockBuf + blockSize - sizeof(int), &next_free, sizeof(int));
+        if (writeBlock(fd, i, blockBuf, blockSize) != 0) {
             fprintf(stderr, "Error writing free block %d during mkfs\n", i);
-            free(block_buf); close(fd); unlink(fname); return -1;
+            free(blockBuf); close(fd); unlink(fname); return -1;
         }
     }
 
-    free(block_buf);
+    free(blockBuf);
     if (close(fd) == -1) {
         perror("Error closing file after mymkfs");
         // File is likely created, but closing failed. Not removing it.
         return -1; // Return error even if writes seemed ok
     }
-    printf("Filesystem created successfully on %s (%d data blocks of %d bytes).\n", fname, no_of_blocks, block_size);
+    printf("Filesystem created successfully on %s (%d data blocks of %d bytes).\n", fname, noOfBlocks, blockSize);
     return 0;
 }
 
 
-int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
+int mycopyTo(const char *linux_fname, char *myfsPathSpec) {
     char *myfs_fname = NULL;
-    char *internal_path = NULL;
-    char *target_name = NULL;
-    int parent_dir_block;
+    char *internalPath = NULL;
+    char *targetName = NULL;
+    int parentDirBlock;
     // Descriptor target_desc; // Not needed here, traverse just gives parent block
     SuperBlock sb;
     int fd = -1, linux_fd = -1;
-    int first_data_block = -1; // Track first allocated block for potential rollback
-    int blocks_allocated_count = 0; // Track all allocated blocks for rollback
-    int *allocated_blocks = NULL;   // Array to store allocated block numbers
-    int allocated_blocks_capacity = 10; // Initial capacity
-    char *data_buf = NULL;
+    int firstDataBlock = -1; // Track first allocated block for potential rollback
+    int blockAllocatedCount = 0; // Track all allocated blocks for rollback
+    int *allocatedBlocks = NULL;   // Array to store allocated block numbers
+    int allocatedBlocksCapacity = 10; // Initial capacity
+    char *dataBuf = NULL;
     int result = -1; // Default to error
     int entry_added = 0; // Flag to check if dir entry was added for rollback
 
-    allocated_blocks = malloc(allocated_blocks_capacity * sizeof(int));
-    if (!allocated_blocks) { perror("malloc failed for rollback info"); goto cleanup; }
+    allocatedBlocks = malloc(allocatedBlocksCapacity * sizeof(int));
+    if (!allocatedBlocks) { perror("malloc failed for rollback info"); goto cleanup; }
 
 
     // 1. Parse paths
-    if (parse_path_spec(myfs_path_spec, &myfs_fname, &internal_path) != 0) {
+    if (parsePathSpec(myfsPathSpec, &myfs_fname, &internalPath) != 0) {
         goto cleanup; // Error message already printed
     }
 
@@ -870,46 +880,46 @@ int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
         perror("Error opening myfs file");
         goto cleanup;
     }
-    if (read_superblock(fd, &sb) != 0) {
+    if (readSuperBlock(fd, &sb) != 0) {
         fprintf(stderr, "Error reading superblock from %s\n", myfs_fname);
         goto cleanup;
     }
-    data_buf = malloc(sb.block_size);
-    if (!data_buf) { perror("malloc failed for data buffer"); goto cleanup;}
+    dataBuf = malloc(sb.blockSize);
+    if (!dataBuf) { perror("malloc failed for data buffer"); goto cleanup;}
 
 
     // 4. Traverse path to find parent directory block and target name
-    int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &target_name);
+    int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &targetName);
 
-    if (traverse_status < 0) { // Error during traversal (-1, -2, -3, -5)
-        fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname);
-        // Specific error should be printed by traverse_path
+    if (traverseStatus < 0) { // Error during traversal (-1, -2, -3, -5)
+        fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname);
+        // Specific error should be printed by traversePath
         goto cleanup;
     }
-     if (traverse_status == 0) { // Path was root "/"
+     if (traverseStatus == 0) { // Path was root "/"
          // We need the actual root block number to check for existence inside root
-         parent_dir_block = sb.root_dir_block;
+         parentDirBlock = sb.rootDirBlock;
      } else {
-         parent_dir_block = traverse_status;
+         parentDirBlock = traverseStatus;
      }
 
-     if (!target_name || strcmp(target_name, "/") == 0) {
-         fprintf(stderr, "Error: Invalid target name derived from path '%s'. Cannot copy into root itself.\n", internal_path);
+     if (!targetName || strcmp(targetName, "/") == 0) {
+fprintf(stderr, "Error: Invalid target name derived from path '%s'. Cannot copy into root itself.\n", internalPath);
          goto cleanup;
      }
 
 
     // 5. Check if target name already exists in parent directory
     Descriptor existing_desc;
-    if (find_entry_in_dir(fd, &sb, parent_dir_block, target_name, &existing_desc, NULL, NULL) == 0) {
-        fprintf(stderr, "Error: Target '%s' already exists in the destination directory of %s\n", target_name, myfs_path_spec);
+    if (findEntryInDir(fd, &sb, parentDirBlock, targetName, &existing_desc, NULL, NULL) == 0) {
+        fprintf(stderr, "Error: Target '%s' already exists in the destination directory of %s\n", targetName, myfsPathSpec);
         goto cleanup;
     }
 
 
     // 6. Check filename length
-    if (strlen(target_name) >= MAX_FILENAME_LEN) {
-        fprintf(stderr, "Error: Target filename '%s' is too long (max %d chars).\n", target_name, MAX_FILENAME_LEN -1);
+    if (strlen(targetName) >= MAX_FILENAME_LEN) {
+        fprintf(stderr, "Error: Target filename '%s' is too long (max %d chars).\n", targetName, MAX_FILENAME_LEN -1);
         goto cleanup;
     }
 
@@ -922,14 +932,14 @@ int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
 
     // 8. Allocate first block for the file data (if file size > 0)
     if (linux_stat.st_size > 0) {
-        first_data_block = allocate_block(fd, &sb);
-        if (first_data_block == -1) {
+        firstDataBlock = allocateBlock(fd, &sb);
+        if (firstDataBlock == -1) {
             fprintf(stderr, "Error allocating first data block (disk full?)\n");
             goto cleanup;
         }
-        allocated_blocks[blocks_allocated_count++] = first_data_block;
+        allocatedBlocks[blockAllocatedCount++] = firstDataBlock;
     } else {
-        first_data_block = 0; // Special case: 0-byte file has no data blocks
+        firstDataBlock = 0; // Special case: 0-byte file has no data blocks
     }
 
 
@@ -937,13 +947,13 @@ int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
     Descriptor new_file_desc;
     memset(&new_file_desc, 0, sizeof(Descriptor));
     new_file_desc.type = TYPE_FILE;
-    strncpy(new_file_desc.name, target_name, MAX_FILENAME_LEN);
+    strncpy(new_file_desc.name, targetName, MAX_FILENAME_LEN);
     new_file_desc.name[MAX_FILENAME_LEN - 1] = '\0'; // Ensure null termination
-    new_file_desc.first_block = first_data_block;
+    new_file_desc.first_block = firstDataBlock;
     new_file_desc.size = linux_stat.st_size;
 
     // 10. Add descriptor to parent directory
-    if (add_entry_to_dir(fd, &sb, parent_dir_block, &new_file_desc) != 0) {
+    if (addEntryToDir(fd, &sb, parentDirBlock, &new_file_desc) != 0) {
         fprintf(stderr, "Error adding file entry to directory\n");
         // Rollback: free the allocated block(s)
         goto rollback;
@@ -954,11 +964,11 @@ int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
     if (linux_stat.st_size > 0) {
         ssize_t bytes_read;
         off_t bytes_copied = 0;
-        int current_myfs_block = first_data_block;
+        int current_myfs_block = firstDataBlock;
         int next_myfs_block = 0;
-        int data_bytes_per_block = sb.block_size - sizeof(int);
+        int data_bytes_per_block = sb.blockSize - sizeof(int);
 
-        while ((bytes_read = read(linux_fd, data_buf, data_bytes_per_block)) > 0) {
+        while ((bytes_read = read(linux_fd, dataBuf, data_bytes_per_block)) > 0) {
             bytes_copied += bytes_read;
 
             // Is this the last chunk of data?
@@ -966,31 +976,31 @@ int mycopyTo_impl(const char *linux_fname, char *myfs_path_spec) {
                 next_myfs_block = 0; // Mark end of chain
                 // Zero out remaining part of buffer if bytes_read < capacity
                 if (bytes_read < data_bytes_per_block) {
-                    memset(data_buf + bytes_read, 0, data_bytes_per_block - bytes_read);
+                    memset(dataBuf + bytes_read, 0, data_bytes_per_block - bytes_read);
                 }
             } else {
                 // Need another block
-                next_myfs_block = allocate_block(fd, &sb);
+                next_myfs_block = allocateBlock(fd, &sb);
                 if (next_myfs_block == -1) {
                     fprintf(stderr, "Error allocating data block during copy (disk full?)\n");
                     goto rollback; // Rollback needed
                 }
-                 // Grow allocated_blocks array if needed
-                 if (blocks_allocated_count >= allocated_blocks_capacity) {
-                     allocated_blocks_capacity *= 2;
-                     int *temp = realloc(allocated_blocks, allocated_blocks_capacity * sizeof(int));
+                 // Grow allocatedBlocks array if needed
+                 if (blockAllocatedCount >= allocatedBlocksCapacity) {
+                     allocatedBlocksCapacity *= 2;
+                     int *temp = realloc(allocatedBlocks, allocatedBlocksCapacity * sizeof(int));
                      if (!temp) { perror("realloc failed for rollback info"); goto rollback; } // Critical, cannot track
-                     allocated_blocks = temp;
+                     allocatedBlocks = temp;
                  }
-                 allocated_blocks[blocks_allocated_count++] = next_myfs_block;
+                 allocatedBlocks[blockAllocatedCount++] = next_myfs_block;
 
             }
 
             // Write next block pointer to end of current buffer
-            memcpy(data_buf + sb.block_size - sizeof(int), &next_myfs_block, sizeof(int));
+            memcpy(dataBuf + sb.blockSize - sizeof(int), &next_myfs_block, sizeof(int));
 
             // Write current data block
-            if (write_block(fd, current_myfs_block, data_buf, sb.block_size) != 0) {
+            if (writeBlock(fd, current_myfs_block, dataBuf, sb.blockSize) != 0) {
                 fprintf(stderr, "Error writing data block %d during copy\n", current_myfs_block);
                 goto rollback; // Rollback needed
             }
@@ -1021,14 +1031,14 @@ rollback:
     result = -1; // Ensure error status
 
     // Rollback 1: Remove directory entry if it was added
-    if (entry_added && fd != -1 && target_name) {
-         // Need to re-read SB in case free_block changed it during allocation attempts
+    if (entry_added && fd != -1 && targetName) {
+         // Need to re-read SB in case freeBlock changed it during allocation attempts
          SuperBlock sb_rollback;
-         if (read_superblock(fd, &sb_rollback) == 0) {
-             if (remove_entry_from_dir(fd, &sb_rollback, parent_dir_block, target_name) != 0) {
-                 fprintf(stderr, "Rollback warning: Failed to remove directory entry for '%s'. Filesystem inconsistent.\n", target_name);
+         if (readSuperBlock(fd, &sb_rollback) == 0) {
+             if (removeEntryFromDir(fd, &sb_rollback, parentDirBlock, targetName) != 0) {
+                 fprintf(stderr, "Rollback warning: Failed to remove directory entry for '%s'. Filesystem inconsistent.\n", targetName);
              } else {
-                  fprintf(stderr, "Rollback: Removed directory entry for '%s'.\n", target_name);
+                  fprintf(stderr, "Rollback: Removed directory entry for '%s'.\n", targetName);
              }
          } else {
              fprintf(stderr, "Rollback warning: Failed to re-read superblock, cannot remove directory entry.\n");
@@ -1036,16 +1046,16 @@ rollback:
     }
 
     // Rollback 2: Free any allocated blocks
-    if (blocks_allocated_count > 0 && fd != -1) {
+    if (blockAllocatedCount > 0 && fd != -1) {
         SuperBlock sb_rollback; // Read SB again
-         if (read_superblock(fd, &sb_rollback) == 0) {
-             fprintf(stderr, "Rollback: Freeing %d allocated blocks...\n", blocks_allocated_count);
-             for (int i = 0; i < blocks_allocated_count; ++i) {
-                 if (free_block(fd, &sb_rollback, allocated_blocks[i]) != 0) {
-                     // Don't update sb_rollback in loop, free_block writes the SB itself
-                      fprintf(stderr, "Rollback warning: Failed to free block %d. Filesystem inconsistent.\n", allocated_blocks[i]);
+         if (readSuperBlock(fd, &sb_rollback) == 0) {
+             fprintf(stderr, "Rollback: Freeing %d allocated blocks...\n", blockAllocatedCount);
+             for (int i = 0; i < blockAllocatedCount; ++i) {
+                 if (freeBlock(fd, &sb_rollback, allocatedBlocks[i]) != 0) {
+                     // Don't update sb_rollback in loop, freeBlock writes the SB itself
+                      fprintf(stderr, "Rollback warning: Failed to free block %d. Filesystem inconsistent.\n", allocatedBlocks[i]);
                  } else {
-                     // fprintf(stderr, "Rollback: Freed block %d.\n", allocated_blocks[i]);
+                     // fprintf(stderr, "Rollback: Freed block %d.\n", allocatedBlocks[i]);
                  }
              }
              fprintf(stderr, "Rollback: Finished freeing blocks.\n");
@@ -1059,26 +1069,26 @@ cleanup:
     if (linux_fd != -1) close(linux_fd);
     if (fd != -1) close(fd);
     free(myfs_fname);
-    free(internal_path);
-    free(target_name);
-    free(data_buf);
-    free(allocated_blocks);
+    free(internalPath);
+    free(targetName);
+    free(dataBuf);
+    free(allocatedBlocks);
     return result;
 }
 
 
-int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
+int mycopyFrom(char *myfsPathSpec, const char *linux_fname) {
     char *myfs_fname = NULL;
-    char *internal_path = NULL;
+    char *internalPath = NULL;
     char *source_name = NULL;
     Descriptor source_desc;
     SuperBlock sb;
     int fd = -1, linux_fd = -1;
-    char *data_buf = NULL;
+    char *dataBuf = NULL;
     int result = -1; // Default to error
 
     // 1. Parse paths
-    if (parse_path_spec(myfs_path_spec, &myfs_fname, &internal_path) != 0) {
+    if (parsePathSpec(myfsPathSpec, &myfs_fname, &internalPath) != 0) {
         goto cleanup;
     }
 
@@ -1088,42 +1098,42 @@ int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
         perror("Error opening myfs file");
         goto cleanup;
     }
-    if (read_superblock(fd, &sb) != 0) {
+    if (readSuperBlock(fd, &sb) != 0) {
         fprintf(stderr, "Error reading superblock from %s\n", myfs_fname);
         goto cleanup;
     }
-    data_buf = malloc(sb.block_size);
-     if (!data_buf) { perror("malloc failed for data buffer"); goto cleanup;}
+    dataBuf = malloc(sb.blockSize);
+     if (!dataBuf) { perror("malloc failed for data buffer"); goto cleanup;}
 
 
     // 3. Traverse path to find the source file descriptor
-    int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &source_name); // Get name first
+    int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &source_name); // Get name first
 
-    if (traverse_status < 0) { // Error during traversal
-        fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname);
+    if (traverseStatus < 0) { // Error during traversal
+        fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname);
         goto cleanup;
     }
      int parent_block;
-     if (traverse_status == 0) { // Path was root "/"
+     if (traverseStatus == 0) { // Path was root "/"
          fprintf(stderr, "Error: Cannot copyFrom root directory '/'\n");
          goto cleanup;
      } else {
-         parent_block = traverse_status;
+         parent_block = traverseStatus;
      }
 
      if (!source_name) {
-         fprintf(stderr, "Internal error: Failed to get source name from path traversal for '%s'.\n", internal_path);
+         fprintf(stderr, "Internal error: Failed to get source name from path traversal for '%s'.\n", internalPath);
          goto cleanup;
      }
 
      // Verify the entry exists in the parent directory and get its descriptor
-     if (find_entry_in_dir(fd, &sb, parent_block, source_name, &source_desc, NULL, NULL) != 0) {
-         fprintf(stderr, "Error: Source '%s' not found in directory within %s\n", source_name, myfs_path_spec);
+     if (findEntryInDir(fd, &sb, parent_block, source_name, &source_desc, NULL, NULL) != 0) {
+         fprintf(stderr, "Error: Source '%s' not found in directory within %s\n", source_name, myfsPathSpec);
          goto cleanup;
      }
 
     if (source_desc.type != TYPE_FILE) {
-        fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file.\n", myfs_path_spec, source_name);
+        fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file.\n", myfsPathSpec, source_name);
         goto cleanup;
     }
 
@@ -1138,7 +1148,7 @@ int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
     off_t bytes_to_copy = source_desc.size;
     off_t bytes_copied = 0;
     int current_myfs_block = source_desc.first_block;
-    int data_bytes_per_block = sb.block_size - sizeof(int);
+    int data_bytes_per_block = sb.blockSize - sizeof(int);
 
      // Handle 0-byte file case explicitly (no blocks to read)
      if (bytes_to_copy == 0) {
@@ -1148,7 +1158,7 @@ int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
      }
 
     while (bytes_copied < bytes_to_copy && current_myfs_block != 0) {
-        if (read_block(fd, current_myfs_block, data_buf, sb.block_size) != 0) {
+        if (readBlock(fd, current_myfs_block, dataBuf, sb.blockSize) != 0) {
             fprintf(stderr, "Error reading data block %d during copy from myfs\n", current_myfs_block);
             goto cleanup; // File system might be corrupt, abort
         }
@@ -1161,16 +1171,16 @@ int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
         }
 
          if(chunk_size > 0) {
-            ssize_t bytes_written = write(linux_fd, data_buf, chunk_size);
-            if (bytes_written == -1) {
+            ssize_t bytesWritten = write(linux_fd, dataBuf, chunk_size);
+            if (bytesWritten == -1) {
                 perror("Error writing to destination linux file");
                 goto cleanup; // Error writing to linux fs
             }
-            if (bytes_written < chunk_size) {
+            if (bytesWritten < chunk_size) {
                 fprintf(stderr, "Error: Short write to linux file (disk full?)\n");
                 goto cleanup; // Error writing to linux fs
             }
-            bytes_copied += bytes_written;
+            bytes_copied += bytesWritten;
          } else {
              // This block contains no actual data needed for the file size
              // (e.g., file size ends exactly at block boundary, but chain continues)
@@ -1180,7 +1190,7 @@ int mycopyFrom_impl(char *myfs_path_spec, const char *linux_fname) {
 
         // Get next block number if we haven't copied everything
         if (bytes_copied < bytes_to_copy) {
-             memcpy(&current_myfs_block, data_buf + sb.block_size - sizeof(int), sizeof(int)); // Fixed: & added
+             memcpy(&current_myfs_block, dataBuf + sb.blockSize - sizeof(int), sizeof(int)); // Fixed: & added
         } else {
             current_myfs_block = 0; // Copied everything, stop.
         }
@@ -1209,9 +1219,9 @@ cleanup:
     }
     if (fd != -1) close(fd);
     free(myfs_fname);
-    free(internal_path);
+    free(internalPath);
     free(source_name);
-    free(data_buf);
+    free(dataBuf);
     // If error occurred during write, the linux file might be partial.
      if (result != 0 && linux_fname) {
           unlink(linux_fname); // Try to remove partial linux file on error
@@ -1219,54 +1229,72 @@ cleanup:
     return result;
 }
 
-int myrm_impl(char *myfs_path_spec) {
+int myrm(char *myfsPathSpec) {
     char *myfs_fname = NULL;
-    char *internal_path = NULL;
-    char *target_name = NULL;
+    char *internalPath = NULL;
+    char *targetName = NULL;
     Descriptor target_desc;
     SuperBlock sb;
     int fd = -1;
-    char *block_buf = NULL;
+    char *blockBuf = NULL;
     int result = -1; // Default error
 
     // 1. Parse path
-    if (parse_path_spec(myfs_path_spec, &myfs_fname, &internal_path) != 0) {
+    if (parsePathSpec(myfsPathSpec, &myfs_fname, &internalPath) != 0) {
         goto cleanup;
     }
-     if (strcmp(internal_path, "/") == 0) {
+     if (strcmp(internalPath, "/") == 0) {
          fprintf(stderr, "Error: Cannot remove root directory '/' with myrm.\n");
          goto cleanup;
      }
 
     // 2. Open FS and read SB
     fd = open(myfs_fname, O_RDWR);
-    if (fd == -1) { perror("Error opening myfs file"); goto cleanup; }
-    if (read_superblock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
-    block_buf = malloc(sb.block_size);
-    if (!block_buf) {perror("malloc failed for block buffer"); goto cleanup;}
-
-    // 3. Find parent and target descriptor
-    int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &target_name);
-    if (traverse_status < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname); goto cleanup;}
-
-     int parent_block;
-     if (traverse_status == 0) { // Path was root "/" - this should have been caught earlier
-          fprintf(stderr, "Internal Error: Traverse path returned root for non-root rm path '%s'\n", internal_path);
-          goto cleanup;
-     } else {
-          parent_block = traverse_status;
-     }
-
-     if (!target_name) { fprintf(stderr,"Internal error: no target name from traverse for '%s'\n", internal_path); goto cleanup;}
-
-     // Verify the entry exists in the parent and get its descriptor
-     if (find_entry_in_dir(fd, &sb, parent_block, target_name, &target_desc, NULL, NULL) != 0) {
-         fprintf(stderr, "Error: File '%s' not found in directory within %s\n", target_name, myfs_path_spec);
+    if (fd == -1) 
+    { perror("Error opening myfs file");
          goto cleanup;
      }
+    if (readSuperBlock(fd, &sb) != 0) 
+    { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname);
+         goto cleanup;
+         }
+    blockBuf = malloc(sb.blockSize);
+    if (!blockBuf) 
+    { perror("malloc failed for block buffer");
+         goto cleanup;
+    }
 
-     if (target_desc.type != TYPE_FILE) {
-         fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file. Use myrmdir for directories.\n", myfs_path_spec, target_name);
+    // 3. Find parent and target descriptor
+    int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &targetName);
+    if (traverseStatus < 0) 
+    { fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname); 
+         goto cleanup;
+    }
+
+     int parent_block;
+     if (traverseStatus == 0) 
+     { // Path was root "/" - this should have been caught earlier
+          fprintf(stderr, "Internal Error: Traverse path returned root for non-root rm path '%s'\n", internalPath);
+          goto cleanup;
+     } else {
+          parent_block = traverseStatus;
+     }
+
+     if (!targetName) 
+     { fprintf(stderr,"Internal error: no target name from traverse for '%s'\n", internalPath); 
+        goto cleanup; 
+    }
+
+     // Verify the entry exists in the parent and get its descriptor
+     if (findEntryInDir(fd, &sb, parent_block, targetName, &target_desc, NULL, NULL) != 0) 
+     { 
+         fprintf(stderr, "Error: File '%s' not found in directory within %s\n", targetName, myfsPathSpec); 
+         goto cleanup; 
+     }
+
+     if (target_desc.type != TYPE_FILE) 
+     { 
+         fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file. Use myrmdir for directories.\n", myfsPathSpec, targetName);
          goto cleanup;
      }
 
@@ -1276,7 +1304,7 @@ int myrm_impl(char *myfs_path_spec) {
     int blocks_freed_count = 0;
     while (current_block != 0) {
         // Read block just to get the next pointer before freeing
-        if (read_block(fd, current_block, block_buf, sb.block_size) != 0) {
+        if (readBlock(fd, current_block, blockBuf, sb.blockSize) != 0) {
              fprintf(stderr, "Error reading block %d while freeing chain (continuing removal, FS may be inconsistent)\n", current_block);
              // Cannot get next pointer, must stop freeing chain.
              next_block = 0; // Stop chain processing
@@ -1284,11 +1312,11 @@ int myrm_impl(char *myfs_path_spec) {
              result = -1;
              goto cleanup; // Abort the rm operation
         } else {
-            memcpy(&next_block, block_buf + sb.block_size - sizeof(int), sizeof(int));
+            memcpy(&next_block, blockBuf + sb.blockSize - sizeof(int), sizeof(int));
         }
 
-        // Free the current block (free_block updates and writes SB)
-        if (free_block(fd, &sb, current_block) != 0) {
+        // Free the current block (freeBlock updates and writes SB)
+        if (freeBlock(fd, &sb, current_block) != 0) {
             fprintf(stderr, "Error freeing block %d (continuing removal attempt, FS may be inconsistent)\n", current_block);
             // Proceed, but the free list might be corrupt
         } else {
@@ -1296,13 +1324,13 @@ int myrm_impl(char *myfs_path_spec) {
         }
         current_block = next_block;
     }
-     // fprintf(stderr, "Debug: Freed %d data blocks for %s.\n", blocks_freed_count, target_name);
+     // fprintf(stderr, "Debug: Freed %d data blocks for %s.\n", blocks_freed_count, targetName);
 
 
     // 5. Remove entry from parent directory
-    // Superblock sb might have changed due to free_block calls, but remove_entry doesn't need SB *content*.
-    if (remove_entry_from_dir(fd, &sb, parent_block, target_name) != 0) {
-        fprintf(stderr, "Error removing directory entry for '%s' after freeing blocks. FS inconsistent.\n", target_name);
+    // Superblock sb might have changed due to freeBlock calls, but remove_entry doesn't need SB *content*.
+    if (removeEntryFromDir(fd, &sb, parent_block, targetName) != 0) {
+        fprintf(stderr, "Error removing directory entry for '%s' after freeing blocks. FS inconsistent.\n", targetName);
         // Data blocks freed, but entry remains. Critical inconsistency.
         result = -1;
         goto cleanup; // Error out
@@ -1313,28 +1341,28 @@ int myrm_impl(char *myfs_path_spec) {
 cleanup:
      if (fd != -1) close(fd);
      free(myfs_fname);
-     free(internal_path);
-     free(target_name);
-     free(block_buf);
+     free(internalPath);
+     free(targetName);
+     free(blockBuf);
      return result;
 }
 
 
-int mymkdir_impl(char *mydir_path_spec) {
+int mymkdir(char *mydirPathSpec) {
      char *myfs_fname = NULL;
-     char *internal_path = NULL;
+     char *internalPath = NULL;
      char *new_dir_name = NULL;
      SuperBlock sb;
      int fd = -1;
      int new_dir_data_block = -1; // Track allocated block for rollback
-     char* block_buf = NULL;
+     char* blockBuf = NULL;
      int result = -1; // Default error
 
     // 1. Parse path
-     if (parse_path_spec(mydir_path_spec, &myfs_fname, &internal_path) != 0) {
+     if (parsePathSpec(mydirPathSpec, &myfs_fname, &internalPath) != 0) {
          goto cleanup;
      }
-      if (strcmp(internal_path, "/") == 0) {
+      if (strcmp(internalPath, "/") == 0) {
           fprintf(stderr, "Error: Cannot create root directory '/' (it already exists).\n");
           goto cleanup;
       }
@@ -1342,29 +1370,29 @@ int mymkdir_impl(char *mydir_path_spec) {
      // 2. Open FS and read SB
      fd = open(myfs_fname, O_RDWR);
      if (fd == -1) { perror("Error opening myfs file"); goto cleanup; }
-     if (read_superblock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
+     if (readSuperBlock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
 
      // 3. Traverse path to find parent and check if target exists
-     int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &new_dir_name);
-     if (traverse_status < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname); goto cleanup; }
+     int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &new_dir_name);
+     if (traverseStatus < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname); goto cleanup; }
 
       int parent_block;
-      if (traverse_status == 0) { // Parent is root
-           parent_block = sb.root_dir_block;
+      if (traverseStatus == 0) { // Parent is root
+           parent_block = sb.rootDirBlock;
       } else {
-           parent_block = traverse_status;
+           parent_block = traverseStatus;
       }
 
       if (!new_dir_name || strcmp(new_dir_name, "/") == 0) {
-           fprintf(stderr,"Internal error: no valid directory name derived from '%s'\n", internal_path);
+           fprintf(stderr,"Internal error: no valid directory name derived from '%s'\n", internalPath);
            goto cleanup;
       }
 
 
      // Check if the target name already exists in the parent directory `parent_block`
      Descriptor existing_desc;
-     if (find_entry_in_dir(fd, &sb, parent_block, new_dir_name, &existing_desc, NULL, NULL) == 0) {
-         fprintf(stderr, "Error: Target '%s' already exists in directory within %s\n", new_dir_name, mydir_path_spec);
+     if (findEntryInDir(fd, &sb, parent_block, new_dir_name, &existing_desc, NULL, NULL) == 0) {
+         fprintf(stderr, "Error: Target '%s' already exists in directory within %s\n", new_dir_name, mydirPathSpec);
          goto cleanup;
      }
 
@@ -1375,20 +1403,20 @@ int mymkdir_impl(char *mydir_path_spec) {
      }
 
      // 5. Allocate block for the new directory's data
-     new_dir_data_block = allocate_block(fd, &sb); // allocate_block updates and writes SB
+     new_dir_data_block = allocateBlock(fd, &sb); // allocateBlock updates and writes SB
      if (new_dir_data_block == -1) {
          fprintf(stderr, "Error allocating block for new directory (disk full?)\n");
          goto cleanup; // No rollback needed yet
      }
 
      // 6. Initialize the new directory block (empty)
-     block_buf = calloc(1, sb.block_size); // Zero out, sets next pointer to 0
-     if (!block_buf) { perror("calloc failed for dir buffer"); goto rollback; } // Need rollback for allocated block
-     if (write_block(fd, new_dir_data_block, block_buf, sb.block_size) != 0) {
+     blockBuf = calloc(1, sb.blockSize); // Zero out, sets next pointer to 0
+     if (!blockBuf) { perror("calloc failed for dir buffer"); goto rollback; } // Need rollback for allocated block
+     if (writeBlock(fd, new_dir_data_block, blockBuf, sb.blockSize) != 0) {
           fprintf(stderr, "Error writing new directory block %d\n", new_dir_data_block);
           goto rollback; // Need rollback for allocated block
      }
-     free(block_buf); block_buf=NULL; // Free immediately after use
+     free(blockBuf); blockBuf=NULL; // Free immediately after use
 
      // 7. Create descriptor for the new directory
      Descriptor new_dir_desc;
@@ -1400,8 +1428,8 @@ int mymkdir_impl(char *mydir_path_spec) {
      new_dir_desc.size = 0; // Size is 0 for empty directory
 
      // 8. Add descriptor to parent directory
-     // SB may have changed from allocate_block. add_entry_to_dir reads blocks directly.
-     if (add_entry_to_dir(fd, &sb, parent_block, &new_dir_desc) != 0) {
+     // SB may have changed from allocateBlock. addEntryToDir reads blocks directly.
+     if (addEntryToDir(fd, &sb, parent_block, &new_dir_desc) != 0) {
          fprintf(stderr, "Error adding directory entry to parent directory\n");
          goto rollback; // Rollback allocated block
      }
@@ -1413,10 +1441,10 @@ rollback:
      fprintf(stderr, "Error occurred, attempting rollback...\n");
      result = -1; // Ensure error status
      if (new_dir_data_block != -1 && fd != -1) {
-          // Need to re-read SB as allocate_block wrote it.
+          // Need to re-read SB as allocateBlock wrote it.
          SuperBlock sb_rollback;
-         if (read_superblock(fd, &sb_rollback) == 0) {
-              if (free_block(fd, &sb_rollback, new_dir_data_block) != 0) {
+         if (readSuperBlock(fd, &sb_rollback) == 0) {
+              if (freeBlock(fd, &sb_rollback, new_dir_data_block) != 0) {
                    fprintf(stderr, "Rollback warning: Failed to free allocated block %d. FS inconsistent.\n", new_dir_data_block);
               } else {
                   fprintf(stderr, "Rollback: Freed allocated block %d.\n", new_dir_data_block);
@@ -1430,27 +1458,27 @@ rollback:
  cleanup:
       if (fd != -1) close(fd);
       free(myfs_fname);
-      free(internal_path);
+      free(internalPath);
       free(new_dir_name);
-      free(block_buf); // In case of error after allocation but before write
+      free(blockBuf); // In case of error after allocation but before write
       return result;
 }
 
-int myrmdir_impl(char *mydir_path_spec) {
+int myrmdir(char *mydirPathSpec) {
      char *myfs_fname = NULL;
-     char *internal_path = NULL;
-     char *target_name = NULL;
+     char *internalPath = NULL;
+     char *targetName = NULL;
      Descriptor target_desc;
      SuperBlock sb;
      int fd = -1;
-     char* block_buf = NULL; // Only needed if we handle non-empty dir block chains (which we shouldn't)
+     char* blockBuf = NULL; // Only needed if we handle non-empty dir block chains (which we shouldn't)
      int result = -1; // Default error
 
      // 1. Parse path
-     if (parse_path_spec(mydir_path_spec, &myfs_fname, &internal_path) != 0) {
+     if (parsePathSpec(mydirPathSpec, &myfs_fname, &internalPath) != 0) {
          goto cleanup;
      }
-      if (strcmp(internal_path, "/") == 0) {
+      if (strcmp(internalPath, "/") == 0) {
           fprintf(stderr, "Error: Cannot remove root directory '/'.\n");
           goto cleanup;
       }
@@ -1459,43 +1487,43 @@ int myrmdir_impl(char *mydir_path_spec) {
      // 2. Open FS and read SB
      fd = open(myfs_fname, O_RDWR);
      if (fd == -1) { perror("Error opening myfs file"); goto cleanup; }
-     if (read_superblock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
+     if (readSuperBlock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
 
      // 3. Find parent and target descriptor
-     int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &target_name);
-     if (traverse_status < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname); goto cleanup;}
+     int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &targetName);
+     if (traverseStatus < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname); goto cleanup;}
 
       int parent_block;
-      if (traverse_status == 0) { // Parent is root - this should not happen for rmdir /
-          fprintf(stderr, "Internal Error: Traverse path returned root for non-root rmdir path '%s'\n", internal_path);
+      if (traverseStatus == 0) { // Parent is root - this should not happen for rmdir /
+          fprintf(stderr, "Internal Error: Traverse path returned root for non-root rmdir path '%s'\n", internalPath);
           goto cleanup;
       } else {
-          parent_block = traverse_status;
+          parent_block = traverseStatus;
       }
 
-      if (!target_name || strcmp(target_name, "/") == 0) {
-          fprintf(stderr,"Internal error: no valid directory name derived from '%s'\n", internal_path);
+      if (!targetName || strcmp(targetName, "/") == 0) {
+          fprintf(stderr,"Internal error: no valid directory name derived from '%s'\n", internalPath);
           goto cleanup;
       }
 
 
      // Verify the entry exists in the parent and get its descriptor
-     if (find_entry_in_dir(fd, &sb, parent_block, target_name, &target_desc, NULL, NULL) != 0) {
-         fprintf(stderr, "Error: Directory '%s' not found in directory within %s\n", target_name, mydir_path_spec);
+     if (findEntryInDir(fd, &sb, parent_block, targetName, &target_desc, NULL, NULL) != 0) {
+         fprintf(stderr, "Error: Directory '%s' not found in directory within %s\n", targetName, mydirPathSpec);
          goto cleanup;
      }
       if (target_desc.type != TYPE_DIR) {
-          fprintf(stderr, "Error: '%s' (resolved to '%s') is not a directory. Use myrm for files.\n", mydir_path_spec, target_name);
+          fprintf(stderr, "Error: '%s' (resolved to '%s') is not a directory. Use myrm for files.\n", mydirPathSpec, targetName);
           goto cleanup;
       }
 
      // 4. Check if directory is empty
-     int empty_status = is_directory_empty(fd, &sb, target_desc.first_block);
+     int empty_status = isDirectoryEmpty(fd, &sb, target_desc.first_block);
      if (empty_status == 0) { // Not empty
-         fprintf(stderr, "Error: Directory '%s' (resolved to '%s') is not empty.\n", mydir_path_spec, target_name);
+         fprintf(stderr, "Error: Directory '%s' (resolved to '%s') is not empty.\n", mydirPathSpec, targetName);
          goto cleanup;
      } else if (empty_status == -1) { // Error checking
-         fprintf(stderr, "Error checking if directory '%s' is empty.\n", mydir_path_spec);
+         fprintf(stderr, "Error checking if directory '%s' is empty.\n", mydirPathSpec);
          goto cleanup;
      }
      // Directory is empty if empty_status == 1
@@ -1506,21 +1534,21 @@ int myrmdir_impl(char *mydir_path_spec) {
      // Let's assume it only has the one block allocated at creation.
      int dir_data_block = target_desc.first_block;
      if (dir_data_block != 0) { // Should not be 0 if type is DIR unless FS is corrupt
-          // Free the single data block (free_block updates and writes SB)
-          if (free_block(fd, &sb, dir_data_block) != 0) {
-               fprintf(stderr, "Error freeing directory data block %d for '%s'. FS inconsistent.\n", dir_data_block, target_name);
+          // Free the single data block (freeBlock updates and writes SB)
+          if (freeBlock(fd, &sb, dir_data_block) != 0) {
+               fprintf(stderr, "Error freeing directory data block %d for '%s'. FS inconsistent.\n", dir_data_block, targetName);
                // Proceed to try removing entry anyway? Or abort? Abort is safer.
                goto cleanup;
           }
      } else {
-           fprintf(stderr, "Warning: Directory '%s' descriptor points to block 0. Skipping block free.\n", target_name);
+           fprintf(stderr, "Warning: Directory '%s' descriptor points to block 0. Skipping block free.\n", targetName);
      }
 
 
      // 6. Remove entry from parent directory
      // SB might have changed. remove_entry doesn't need SB content.
-     if (remove_entry_from_dir(fd, &sb, parent_block, target_name) != 0) {
-         fprintf(stderr, "Error removing directory entry for '%s' after freeing block. FS inconsistent.\n", target_name);
+     if (removeEntryFromDir(fd, &sb, parent_block, targetName) != 0) {
+         fprintf(stderr, "Error removing directory entry for '%s' after freeing block. FS inconsistent.\n", targetName);
          // Block freed, but entry remains. Critical inconsistency.
          // Should try to re-allocate and link block? Very hard. Error out.
          goto cleanup; // Error out
@@ -1531,68 +1559,68 @@ int myrmdir_impl(char *mydir_path_spec) {
  cleanup:
       if (fd != -1) close(fd);
       free(myfs_fname);
-      free(internal_path);
-      free(target_name);
-      free(block_buf); // Just in case it was allocated
+      free(internalPath);
+      free(targetName);
+      free(blockBuf); // Just in case it was allocated
       return result;
 }
 
 
 // --- Library Functions (Not Commands) ---
 
-// Reads the *logical* block number `logical_block_no` (0-indexed) of the myfile into user buffer `buf`.
-// Assumes buf is large enough (sb.block_size).
+// Reads the *logical* block number `logicalBlockNo` (0-indexed) of the myfile into user buffer `buf`.
+// Assumes buf is large enough (sb.blockSize).
 // Returns 0 on success, -1 on error.
-int myreadBlock_impl(char *myfname_spec, char *buf, int logical_block_no) {
+int myreadBlock(char *myfnameSpec, char *buf, int logicalBlockNo) {
     char *myfs_fname = NULL;
-    char *internal_path = NULL;
-    char *target_name = NULL;
+    char *internalPath = NULL;
+    char *targetName = NULL;
     Descriptor target_desc;
     SuperBlock sb;
     int fd = -1;
-    char* temp_buf = NULL; // For reading intermediate blocks to find next pointer
+    char* tempBuf = NULL; // For reading intermediate blocks to find next pointer
     int result = -1;
 
-    if (logical_block_no < 0) {
+    if (logicalBlockNo < 0) {
         fprintf(stderr, "Error: Logical block number cannot be negative.\n");
         goto cleanup;
     }
 
-    if (parse_path_spec(myfname_spec, &myfs_fname, &internal_path) != 0) goto cleanup;
+    if (parsePathSpec(myfnameSpec, &myfs_fname, &internalPath) != 0) goto cleanup;
 
     fd = open(myfs_fname, O_RDONLY);
     if (fd == -1) { perror("Error opening myfs file"); goto cleanup; }
-    if (read_superblock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
+    if (readSuperBlock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
 
     // Find the file descriptor
-    int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &target_name);
-     if (traverse_status < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname); goto cleanup;}
+    int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &targetName);
+     if (traverseStatus < 0) { fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname); goto cleanup;}
 
       int parent_block;
-      if (traverse_status == 0) { // Path was root "/"
+      if (traverseStatus == 0) { // Path was root "/"
           fprintf(stderr, "Error: Cannot readBlock on root directory '/'\n");
           goto cleanup;
       } else {
-          parent_block = traverse_status;
+          parent_block = traverseStatus;
       }
 
-      if (!target_name || strcmp(target_name,"/") == 0) {
-           fprintf(stderr,"Internal error: no valid file name derived from '%s'\n", internal_path);
+      if (!targetName || strcmp(targetName,"/") == 0) {
+           fprintf(stderr,"Internal error: no valid file name derived from '%s'\n", internalPath);
            goto cleanup;
       }
 
      // Verify the entry exists in the parent and get its descriptor
-     if (find_entry_in_dir(fd, &sb, parent_block, target_name, &target_desc, NULL, NULL) != 0) {
-         fprintf(stderr, "Error: File '%s' not found in directory within %s\n", target_name, myfname_spec);
+     if (findEntryInDir(fd, &sb, parent_block, targetName, &target_desc, NULL, NULL) != 0) {
+         fprintf(stderr, "Error: File '%s' not found in directory within %s\n", targetName, myfnameSpec);
          goto cleanup;
      }
      if (target_desc.type != TYPE_FILE) {
-         fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file.\n", myfname_spec, target_name);
+         fprintf(stderr, "Error: '%s' (resolved to '%s') is not a file.\n", myfnameSpec, targetName);
          goto cleanup;
      }
 
     // Calculate max logical block number possible for the file size
-    int data_bytes_per_block = sb.block_size > (int)sizeof(int) ? sb.block_size - sizeof(int) : 0;
+    int data_bytes_per_block = sb.blockSize > (int)sizeof(int) ? sb.blockSize - sizeof(int) : 0;
     int max_logical_block = -1; // For 0-byte file
     if (target_desc.size > 0 && data_bytes_per_block > 0) {
          max_logical_block = (target_desc.size - 1) / data_bytes_per_block;
@@ -1602,22 +1630,22 @@ int myreadBlock_impl(char *myfname_spec, char *buf, int logical_block_no) {
 
 
      // Check if logical block number is valid
-     if (logical_block_no < 0 || // Already checked, but good practice
-         (target_desc.size == 0 && logical_block_no > 0) || // Cannot read block > 0 of 0-byte file
-         (target_desc.size > 0 && (logical_block_no > max_logical_block || data_bytes_per_block == 0)) // Check against calculated max block
+     if (logicalBlockNo < 0 || // Already checked, but good practice
+         (target_desc.size == 0 && logicalBlockNo > 0) || // Cannot read block > 0 of 0-byte file
+         (target_desc.size > 0 && (logicalBlockNo > max_logical_block || data_bytes_per_block == 0)) // Check against calculated max block
         )
      {
          fprintf(stderr, "Error: Logical block number %d is out of range for file '%s' (size %d, max block %d).\n",
-                 logical_block_no, target_name, target_desc.size, max_logical_block);
+                 logicalBlockNo, targetName, target_desc.size, max_logical_block);
          goto cleanup;
      }
 
 
     // Handle 0-byte file read block 0 explicitly
-     if (target_desc.size == 0 && logical_block_no == 0) {
+     if (target_desc.size == 0 && logicalBlockNo == 0) {
           // Reading logical block 0 of an empty file. Return an empty block.
           // Note: The file descriptor points to first_block=0 in this case.
-          memset(buf, 0, sb.block_size);
+          memset(buf, 0, sb.blockSize);
           result = 0; // Success
           goto cleanup;
      }
@@ -1625,35 +1653,35 @@ int myreadBlock_impl(char *myfname_spec, char *buf, int logical_block_no) {
 
     // Traverse the block chain to find the physical block number
     int current_physical_block = target_desc.first_block;
-    temp_buf = malloc(sb.block_size);
-    if (!temp_buf) { perror("malloc failed for temp buffer"); goto cleanup; }
+    tempBuf = malloc(sb.blockSize);
+    if (!tempBuf) { perror("malloc failed for temp buffer"); goto cleanup; }
 
-    for (int i = 0; i < logical_block_no; ++i) {
+    for (int i = 0; i < logicalBlockNo; ++i) {
         if (current_physical_block == 0) {
             // This should not happen if range check above is correct, indicates FS corruption
             fprintf(stderr, "Error: Logical block number %d is out of range (chain ended unexpectedly at block %d for file '%s'). FS Corrupt.\n",
-                    logical_block_no, i, target_name);
+                    logicalBlockNo, i, targetName);
             goto cleanup;
         }
-        if (read_block(fd, current_physical_block, temp_buf, sb.block_size) != 0) {
-            fprintf(stderr, "Error reading block %d while traversing file chain for '%s'.\n", current_physical_block, target_name);
+        if (readBlock(fd, current_physical_block, tempBuf, sb.blockSize) != 0) {
+            fprintf(stderr, "Error reading block %d while traversing file chain for '%s'.\n", current_physical_block, targetName);
             goto cleanup;
         }
-        memcpy(&current_physical_block, temp_buf + sb.block_size - sizeof(int), sizeof(int)); // Fixed: & added
+        memcpy(&current_physical_block, tempBuf + sb.blockSize - sizeof(int), sizeof(int)); // Fixed: & added
     }
 
     // We have the target physical block number in current_physical_block
     if (current_physical_block == 0) {
-        // Should not happen if range check is correct, unless logical_block_no was 0 for a >0 size file?
+        // Should not happen if range check is correct, unless logicalBlockNo was 0 for a >0 size file?
         // Or if chain ended exactly at the block we needed.
          fprintf(stderr, "Error: Target physical block is 0 after traversing chain for logical block %d of file '%s'. FS Corrupt.\n",
-                 logical_block_no, target_name);
+                 logicalBlockNo, targetName);
         goto cleanup;
     }
 
     // Read the target physical block into the user's buffer
-    if (read_block(fd, current_physical_block, buf, sb.block_size) != 0) {
-        fprintf(stderr, "Error reading target physical block %d for file '%s'.\n", current_physical_block, target_name);
+    if (readBlock(fd, current_physical_block, buf, sb.blockSize) != 0) {
+        fprintf(stderr, "Error reading target physical block %d for file '%s'.\n", current_physical_block, targetName);
         goto cleanup;
     }
 
@@ -1662,19 +1690,19 @@ int myreadBlock_impl(char *myfname_spec, char *buf, int logical_block_no) {
 cleanup:
     if (fd != -1) close(fd);
     free(myfs_fname);
-    free(internal_path);
-    free(target_name);
-    free(temp_buf);
+    free(internalPath);
+    free(targetName);
+    free(tempBuf);
     return result;
 }
 
 
 // Stores the 21-byte descriptor for the myfile/mydirectory in the user buffer `buf`.
 // Returns 0 on success, -1 on error.
-int mystat_impl(char *myname_spec, char *buf) {
+int myStat(char *mynameSpec, char *buf) {
     char *myfs_fname = NULL;
-    char *internal_path = NULL;
-    char *target_name = NULL;
+    char *internalPath = NULL;
+    char *targetName = NULL;
     Descriptor target_desc;
     SuperBlock sb;
     int fd = -1;
@@ -1687,35 +1715,35 @@ int mystat_impl(char *myname_spec, char *buf) {
     }
     memset(buf, 0, DESCRIPTOR_SIZE); // Clear user buffer initially
 
-    if (parse_path_spec(myname_spec, &myfs_fname, &internal_path) != 0) goto cleanup;
+    if (parsePathSpec(mynameSpec, &myfs_fname, &internalPath) != 0) goto cleanup;
 
     fd = open(myfs_fname, O_RDONLY);
     if (fd == -1) { perror("Error opening myfs file"); goto cleanup; }
-    if (read_superblock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
+    if (readSuperBlock(fd, &sb) != 0) { fprintf(stderr, "Error reading superblock from %s\n", myfs_fname); goto cleanup; }
 
     // Find the descriptor
-    int traverse_status = traverse_path(fd, &sb, internal_path, NULL, &target_name);
-     if (traverse_status < 0) {
-          fprintf(stderr, "Error traversing path '%s' in %s\n", internal_path, myfs_fname);
+    int traverseStatus = traversePath(fd, &sb, internalPath, NULL, &targetName);
+     if (traverseStatus < 0) {
+          fprintf(stderr, "Error traversing path '%s' in %s\n", internalPath, myfs_fname);
           goto cleanup;
      }
 
-     if (traverse_status == 0) { // Path was root "/"
+     if (traverseStatus == 0) { // Path was root "/"
           // Special case: Stat root. Create a pseudo-descriptor.
           target_desc.type = TYPE_DIR;
           strncpy(target_desc.name, "/", MAX_FILENAME_LEN);
           target_desc.name[MAX_FILENAME_LEN -1] = '\0';
-          target_desc.first_block = sb.root_dir_block;
+          target_desc.first_block = sb.rootDirBlock;
           target_desc.size = 0;
      } else {
-          int parent_block = traverse_status;
+          int parent_block = traverseStatus;
           // Verify the entry exists in the parent and get its descriptor
-          if (!target_name || strcmp(target_name, "/") == 0) {
-               fprintf(stderr,"Internal error: no valid name from traverse for stat '%s'\n", internal_path);
+          if (!targetName || strcmp(targetName, "/") == 0) {
+               fprintf(stderr,"Internal error: no valid name from traverse for stat '%s'\n", internalPath);
                goto cleanup;
           }
-          if (find_entry_in_dir(fd, &sb, parent_block, target_name, &target_desc, NULL, NULL) != 0) {
-               fprintf(stderr, "Error: File or directory '%s' not found in directory within %s\n", target_name, myname_spec);
+          if (findEntryInDir(fd, &sb, parent_block, targetName, &target_desc, NULL, NULL) != 0) {
+               fprintf(stderr, "Error: File or directory '%s' not found in directory within %s\n", targetName, mynameSpec);
                goto cleanup;
           }
      }
@@ -1726,7 +1754,7 @@ int mystat_impl(char *myname_spec, char *buf) {
 cleanup:
     if (fd != -1) close(fd);
     free(myfs_fname);
-    free(internal_path);
-    free(target_name);
+    free(internalPath);
+    free(targetName);
     return result;
 }

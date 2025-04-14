@@ -19,6 +19,7 @@ that signal handler can access it for releasing the shared memory segment. */
 
 /* following is a signal handler for the keypress ^C, that is, ctrl-c */
 typedef void (*sighandler_t)(int);
+
 void releaseSHM(int signum) {
         int status;
         // int shmctl(int shmid, int cmd, struct shmid_ds *buf); /* Read the manual for shmctl() */

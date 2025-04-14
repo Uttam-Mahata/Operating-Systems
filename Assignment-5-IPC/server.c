@@ -30,6 +30,7 @@ void cleanup(int sig) {
 int main(int argc, char* argv[]) {
     key_t shmkey;
 
+
     signal(SIGINT, cleanup);
 
     // Random number generator
