@@ -10,6 +10,12 @@
 int initFileDD(const char *fname, int bsize, int bno);
 int getFreeBlock(const char *fname);
 int freeBlock(const char *fname, int bno);
+int writeMetadata(int fd, file_metadata* metadata, int n);
+file_metadata* read_metadata(int fd, int n);
+int isBlockFree(file_metadata* metadata, int block_num);
+void setBlockUsed(file_metadata* metadata, int block_num);
+void setBlockFree(file_metadata* metadata, int block_num);
+int getMetadataSize(int n);
 int checkfs(const char *fname);
 void demoFunc(const char *fname);
 
@@ -50,9 +56,11 @@ file_metadata* read_metadata(int fd, int n) {
 
 int writeMetadata(int fd, file_metadata* metadata, int n) {
     int meta_size = getMetadataSize(n);
+    int flag;
     
     lseek(fd, 0, SEEK_SET);
-    if (write(fd, metadata, meta_size) != meta_size) {
+    flag = write(fd, metadata, meta_size);
+    if (flag != meta_size) {
         perror("Failed to write metadata");
         return -1;
     }
@@ -91,6 +99,9 @@ void setBlockFree(file_metadata* metadata, int block_num) {
 }
 
 int initFileDD(const char *fname, int bsize, int bno) {
+
+    int flag;
+
     if (bno <= 0 || bsize <= 0) {
         fprintf(stderr, "Invalid block size or block number\n");
         return -1;
@@ -117,8 +128,10 @@ int initFileDD(const char *fname, int bsize, int bno) {
     metadata->s = bsize;
     metadata->ubn = 0;
     metadata->fbn = bno;
-    
-    if (writeMetadata(fd, metadata, bno) != 0) {
+
+    flag = writeMetadata(fd, metadata, bno);
+
+    if (flag == -1) {
         free(metadata);
         close(fd);
         return -1;
@@ -251,6 +264,7 @@ int freeBlock(const char *fname, int bno) {
 int checkfs(const char *fname) {
     // Open the file
     int fd = open(fname, O_RDONLY);
+
     if (fd == -1) {
         perror("Failed to open file");
         return -1;
@@ -301,12 +315,18 @@ int checkfs(const char *fname) {
 }
 
 void demoFunc(const char *fname) {
+    int flag;
+    int blocks[5];
 
     printf("Initializing file %s with 2048 blocks of 4096 bytes each...\n", fname);
-    if (initFileDD(fname, 4096, 2048) != 0) {
+
+    flag = initFileDD(fname, 4096, 2048);
+
+    if(flag == -1) {
         fprintf(stderr, "Failed to initialize file\n");
-        return;
+    return;
     }
+
     printf("File initialized successfully.\n");
     
     // Check file system integrity
@@ -320,7 +340,6 @@ void demoFunc(const char *fname) {
     
     // Get some free blocks
     printf("\nAllocating blocks...\n");
-    int blocks[5];
     for (int i = 0; i < 5; i++) {
         blocks[i] = getFreeBlock(fname);
         if (blocks[i] == -1) {
