@@ -74,6 +74,7 @@ int deQ(CircularQueue *q)
     	fprintf(stderr,"\t\t\t\t\t\tdeQ waiting!\n");
         pthread_cond_wait(&q->empty, &q->mutex);
     }
+    
     int item = q->items[q->front];
     q->front = (q->front + 1) % MAX_QUEUE_SIZE;
     fprintf(stderr,"\t\t\t\t\t\tdeQ signalling!\n");

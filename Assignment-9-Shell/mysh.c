@@ -78,7 +78,7 @@ int launch_process(char **args) {
         }
         _exit(EXIT_FAILURE);
 
-    } else if (pid < 0) {
+    } else if (pid == -1) {
         perror("mysh: fork failed");
     } else {
         do {
