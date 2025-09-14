@@ -1,247 +1,110 @@
-#include <stdio.h>
-#include <sys/types.h> /* for semget(2) ftok(3) semop(2) semctl(2) */
-#include <sys/ipc.h> /* for semget(2) ftok(3) semop(2) semctl(2) */
-#include <sys/sem.h> /* for semget(2) semop(2) semctl(2) */
-#include <unistd.h> /* for fork(2) */
+/**
+ * @file semDemo.c
+ * @brief A command-line tool for managing System V semaphores.
+ * @note This program has some bugs and is not well-structured. For a better version, see semDemoNew.c.
+ */
 
-#include <stdlib.h> /* for exit(3) */
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 
+/**
+ * @union semun
+ * @brief A union for semaphore control operations.
+ */
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
+    struct seminfo *__buf;
+};
 
-#define NO_SEM	1
-
-#define P(s) semop(s, &Pop, 1);
-#define V(s) semop(s, &Vop, 1);
-
-
-
-struct sembuf Pop;
-struct sembuf Vop;
-
+/**
+ * @brief The main function. It parses the command-line arguments and performs the requested semaphore operation.
+ * @param argc The number of command-line arguments.
+ * @param argv An array of command-line arguments.
+ * @return 0 on success, 1 on failure.
+ */
 int main(int argc, char *argv[]) {
-    key_t mykey;
-	pid_t pid;
+    if (argc < 4) {
+        fprintf(stderr, "Usage: %s <file> <proj_id> <operation> [args...]\n", argv[0]);
+        exit(1);
+    }
 
-    int  no_sem = atoi(argv[4]);
+    key_t mykey;
+    int semid;
+    int status;
+    union semun setvalArg;
+
+    // This is not a robust way to parse arguments.
+    int no_sem = (argc > 4) ? atoi(argv[4]) : 1;
     int semnum = no_sem;
 
-    
-
-	int semid;
-
-	int status;
-    union semun {
-		int              val;    /* Value for SETVAL */
-		struct semid_ds *buf;    /* Buffer for IPC_STAT, IPC_SET */
-		unsigned short  *array;  /* Array for GETALL, SETALL */
-		struct seminfo  *__buf;  /* Buffer for IPC_INFO (Linux-specific) */
-	} setvalArg;
-
-    if((strcmp(argv[3], "set") == 0)) {
+    if (argc > 5 && (strcmp(argv[3], "set") == 0)) {
         setvalArg.val = atoi(argv[5]);
     }
 
-	// setvalArg.val = atoi(argv[5]);
-
-    switch (argc) {
-        case 6:
-        if (strcmp(argv[3], "set") == 0) {
-                // Set a semaphore value
-                printf("Setting a semaphore value.\n");
-
-        }
-
-        case 5:
-            if (strcmp(argv[3], "create") == 0) {
-                // Create a semaphore set
-                printf("Creating a semaphore set.\n");
-
-                
-            } else if (strcmp(argv[3], "get") == 0) {
-                // Get a semaphore value
-                printf("Getting a semaphore value.\n");
-            } else if (strcmp(argv[3], "inc") == 0) {
-                // Increment a semaphore value
-                printf("Incrementing a semaphore value.\n");
-            } else if (strcmp(argv[3], "dcr") == 0) {
-                // Decrement a semaphore value
-                printf("Decrementing a semaphore value.\n");
-            } else {
-                printf("Invalid operation.\n");
-            }
-            break;
-        case 4:
-            if (strcmp(argv[3], "rm") == 0) {
-                // Remove a semaphore set
-                printf("Removing a semaphore set.\n");
-            } else if (strcmp(argv[3], "listp") == 0) {
-                // List processes waiting on a semaphore
-                printf("Listing processes waiting on a semaphore.\n");
-            } else {
-                printf("Invalid operation.\n");
-            }
-            break;
-        default:
-            printf("Invalid number of arguments.\n");
-            break;
+    mykey = ftok(argv[1], atoi(argv[2]));
+    if (mykey == -1) {
+        perror("ftok() failed");
+        exit(1);
     }
 
+    // The logic here is flawed. It tries to get a semaphore set with a variable number of semaphores,
+    // which will not work if the set already exists with a different number.
+    semid = semget(mykey, no_sem, IPC_CREAT | 0777);
+    if (semid == -1) {
+        perror("semget() failed");
+        exit(1);
+    }
 
-
-
-	/* struct sembuf has the following fields */
-	//unsigned short sem_num;  /* semaphore number */
-        //short          sem_op;   /* semaphore operation */
-        //short          sem_flg;  /* operation flags */
-
-	Pop.sem_num = 0;
-	Pop.sem_op = -1;
-	Pop.sem_flg = SEM_UNDO;
-
-	Vop.sem_num = 0;
-	Vop.sem_op = 1;
-	Vop.sem_flg = SEM_UNDO;
-    
-    // Creation of Semaphore set
     if (strcmp(argv[3], "create") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
-            exit(1);
-        }
-
-        semid = semget(mykey, NO_SEM, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
-            exit(1);
-        }
-    }
-
-    // Set a semaphore value
-
-    if (strcmp(argv[3], "set") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
-            exit(1);
-        }
-
-        semid = semget(mykey, semnum, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
-            exit(1);
-        }
-
-        status = semctl(semid, 0, SETVAL, setvalArg);
-        if(status == -1) {
+        printf("Semaphore set created with id %d\n", semid);
+    } else if (strcmp(argv[3], "set") == 0) {
+        status = semctl(semid, semnum - 1, SETVAL, setvalArg);
+        if (status == -1) {
             perror("semctl() failed");
             exit(1);
         }
-    }
-// Get the semaphore value
-    if (strcmp(argv[3], "get") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
-            exit(1);
-        }
-
-        semid = semget(mykey, semnum, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
-            exit(1);
-        }
-
-        status = semctl(semid, 0, GETVAL);
-        if(status == -1) {
+    } else if (strcmp(argv[3], "get") == 0) {
+        status = semctl(semid, semnum - 1, GETVAL);
+        if (status == -1) {
             perror("semctl() failed");
             exit(1);
         }
         printf("Semaphore value: %d\n", status);
-    }
-
-// Increment the semaphore value
-    if (strcmp(argv[3], "inc") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
+    } else if (strcmp(argv[3], "inc") == 0) {
+        struct sembuf sop;
+        sop.sem_num = semnum - 1;
+        sop.sem_op = (argc > 5) ? atoi(argv[5]) : 1;
+        sop.sem_flg = 0;
+        if (semop(semid, &sop, 1) == -1) {
+            perror("semop() failed");
             exit(1);
         }
-
-        semid = semget(mykey, semnum, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
+    } else if (strcmp(argv[3], "dcr") == 0) {
+        struct sembuf sop;
+        sop.sem_num = semnum - 1;
+        sop.sem_op = (argc > 5) ? -atoi(argv[5]) : -1;
+        sop.sem_flg = 0;
+        if (semop(semid, &sop, 1) == -1) {
+            perror("semop() failed");
             exit(1);
         }
-
-        status = semctl(semid, 0, GETVAL);
-        if(status == -1) {
-            perror("semctl() failed");
-            exit(1);
-        }
-        printf("Semaphore value: %d\n", status);
-
-        status = semctl(semid, 0, SETVAL, status + atoi(argv[5]));
-        if(status == -1) {
-            perror("semctl() failed");
-            exit(1);
-        }
-    }
-
-    // Decrement the semaphore value
-    if (strcmp(argv[3], "dcr") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
-            exit(1);
-        }
-
-        semid = semget(mykey, semnum, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
-            exit(1);
-        }
-
-        status = semctl(semid, 0, GETVAL);
-        if(status == -1) {
-            perror("semctl() failed");
-            exit(1);
-        }
-        printf("Semaphore value: %d\n", status);
-
-        status = semctl(semid, 0, SETVAL, status - atoi(argv[5]));
-        if(status == -1) {
-            perror("semctl() failed");
-            exit(1);
-        }
-    }   
-    // Remove the semaphore set
-
-    if (strcmp(argv[3], "rm") == 0) {
-        mykey = ftok(argv[1], atoi(argv[2]));
-        if (mykey == -1) {
-            perror("ftok() failed");
-            exit(1);
-        }
-
-        semid = semget(mykey, semnum, IPC_CREAT | 0777);
-        if(semid == -1) {
-            perror("semget() failed");
-            exit(1);
-        }
-
+    } else if (strcmp(argv[3], "rm") == 0) {
         status = semctl(semid, 0, IPC_RMID);
-        if(status == -1) {
+        if (status == -1) {
             perror("semctl() failed");
             exit(1);
         }
+    } else {
+        fprintf(stderr, "Invalid operation: %s\n", argv[3]);
+        exit(1);
     }
-
-
-
-    
-
-
 
     return 0;
 }

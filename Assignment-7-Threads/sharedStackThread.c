@@ -1,3 +1,9 @@
+/**
+ * @file sharedStackThread.c
+ * @brief This program implements a thread-safe shared stack using POSIX threads.
+ * It demonstrates the producer-consumer problem with a manager thread to dynamically add and remove producer and consumer threads.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -9,7 +15,10 @@
 #define MAX_CONSUMER_THREADS 10
 #define MAX_SLEEP_TIME 5
 
-// Stack Structure
+/**
+ * @struct SharedStack
+ * @brief A thread-safe shared stack.
+ */
 typedef struct {
     int items[MAX_STACK_SIZE];
     int top;
@@ -34,7 +43,10 @@ pthread_t consumerThreads[MAX_CONSUMER_THREADS];
 pthread_t managerThread;
 int numProducers = 0, numConsumers = 0;
 
-// Initialize the stack
+/**
+ * @brief Initializes the shared stack.
+ * @param s A pointer to the shared stack.
+ */
 void initStack(SharedStack *s) {
     s->top = -1;
     pthread_mutex_init(&s->mutex, NULL);
@@ -42,50 +54,60 @@ void initStack(SharedStack *s) {
     pthread_cond_init(&s->full, NULL);
 }
 
-// Push item to stack
+/**
+ * @brief Pushes an item onto the stack. This is the producer's operation.
+ * @param s A pointer to the shared stack.
+ * @param item The item to push.
+ */
 void push(SharedStack *s, int item) {
-    fprintf(stderr, "\t\t\t\tCalled push!\n");
-    fprintf(stderr, "\t\t\t\tpush locking!\n");
     pthread_mutex_lock(&s->mutex);
     while (isFull(s)) {
-        fprintf(stderr, "\t\t\t\tpush waiting!\n");
         pthread_cond_wait(&s->full, &s->mutex);
     }
     s->items[++s->top] = item;
-    fprintf(stderr, "\t\t\t\tpush signalling!\n");
     pthread_cond_signal(&s->empty);
-    fprintf(stderr, "\t\t\t\tpush unlocking!\n");
     pthread_mutex_unlock(&s->mutex);
 }
 
-// Pop item from stack
+/**
+ * @brief Pops an item from the stack. This is the consumer's operation.
+ * @param s A pointer to the shared stack.
+ * @return The item popped from the stack.
+ */
 int pop(SharedStack *s) {
-    fprintf(stderr, "\t\t\t\t\t\tCalled pop!\n");
-    fprintf(stderr, "\t\t\t\t\t\tpop locking!\n");
     pthread_mutex_lock(&s->mutex);
     while (isEmpty(s)) {
-        fprintf(stderr, "\t\t\t\t\t\tpop waiting!\n");
         pthread_cond_wait(&s->empty, &s->mutex);
     }
     int item = s->items[s->top--];
-    fprintf(stderr, "\t\t\t\t\t\tpop signalling!\n");
     pthread_cond_signal(&s->full);
-    fprintf(stderr, "\t\t\t\t\t\tpop unlocking!\n");
     pthread_mutex_unlock(&s->mutex);
     return item;
 }
 
-// Check if stack is full
+/**
+ * @brief Checks if the stack is full.
+ * @param s A pointer to the shared stack.
+ * @return 1 if the stack is full, 0 otherwise.
+ */
 int isFull(SharedStack *s) {
     return (s->top == MAX_STACK_SIZE - 1);
 }
 
-// Check if stack is empty
+/**
+ * @brief Checks if the stack is empty.
+ * @param s A pointer to the shared stack.
+ * @return 1 if the stack is empty, 0 otherwise.
+ */
 int isEmpty(SharedStack *s) {
     return (s->top == -1);
 }
 
-// Producer function
+/**
+ * @brief The producer thread function. It produces random items and pushes them onto the stack.
+ * @param data A pointer to the producer's ID.
+ * @return NULL.
+ */
 void *producer(void *data) {
     int producerId = *((int *)data);
     while (1) {
@@ -95,7 +117,7 @@ void *producer(void *data) {
         for (int i = 0; i < numItems; ++i) {
             int item = rand() % 100;
             push(&stack, item);
-            printf("\t\t\t\tProducer %d pushed %d/%d item: %d\n", 
+            printf("Producer %d pushed %d/%d item: %d\n",
                    producerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -103,7 +125,11 @@ void *producer(void *data) {
     return NULL;
 }
 
-// Consumer function
+/**
+ * @brief The consumer thread function. It consumes items from the stack.
+ * @param data A pointer to the consumer's ID.
+ * @return NULL.
+ */
 void *consumer(void *data) {
     int consumerId = *((int *)data);
     while (1) {
@@ -112,7 +138,7 @@ void *consumer(void *data) {
         printf("\n");
         for (int i = 0; i < numItems; ++i) {
             int item = pop(&stack);
-            printf("\t\t\t\t\t\tConsumer %d popped %d/%d item: %d\n", 
+            printf("Consumer %d popped %d/%d item: %d\n",
                    consumerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -120,27 +146,27 @@ void *consumer(void *data) {
     return NULL;
 }
 
-// Clear resources function
+/**
+ * @brief Clears all resources, including threads, mutexes, and condition variables.
+ */
 void clearResources() {
-    // Clear producer threads
     for (int i = 0; i < numProducers; ++i) {
         pthread_cancel(producerThreads[i]);
     }
-    // Clear consumer threads
     for (int i = 0; i < numConsumers; ++i) {
         pthread_cancel(consumerThreads[i]);
     }
-    // Destroy mutex and condition variables
     pthread_mutex_destroy(&stack.mutex);
     pthread_cond_destroy(&stack.empty);
     pthread_cond_destroy(&stack.full);
     printf("All threads and resources cleared.\n");
-    // Reset thread counts
     numProducers = 0;
     numConsumers = 0;
 }
 
-// Delete producer function
+/**
+ * @brief Deletes the last created producer thread.
+ */
 void deleteProducer() {
     if (numProducers > 0) {
         pthread_cancel(producerThreads[numProducers - 1]);
@@ -151,7 +177,9 @@ void deleteProducer() {
     }
 }
 
-// Delete consumer function
+/**
+ * @brief Deletes the last created consumer thread.
+ */
 void deleteConsumer() {
     if (numConsumers > 0) {
         pthread_cancel(consumerThreads[numConsumers - 1]);
@@ -162,7 +190,11 @@ void deleteConsumer() {
     }
 }
 
-// Manager thread function
+/**
+ * @brief The manager thread function. It provides a menu-driven interface to add, remove, and clear producer and consumer threads.
+ * @param data Not used.
+ * @return NULL.
+ */
 void *manager(void *data) {
     char choice;
     printf("Welcome to the manager thread!\n");
@@ -215,6 +247,10 @@ void *manager(void *data) {
     return NULL;
 }
 
+/**
+ * @brief The main function. It initializes the stack and creates the manager thread.
+ * @return 0 on success.
+ */
 int main() {
     initStack(&stack);
     pthread_create(&managerThread, NULL, manager, NULL);

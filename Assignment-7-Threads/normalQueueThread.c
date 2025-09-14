@@ -1,3 +1,9 @@
+/**
+ * @file normalQueueThread.c
+ * @brief This program implements a thread-safe normal (non-circular) queue using POSIX threads.
+ * It demonstrates the producer-consumer problem with a manager thread to dynamically add and remove producer and consumer threads.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -9,7 +15,10 @@
 #define MAX_CONSUMER_THREADS 10
 #define MAX_SLEEP_TIME 5
 
-// Normal Queue Structure
+/**
+ * @struct Queue
+ * @brief A thread-safe normal queue.
+ */
 typedef struct {
     int items[MAX_QUEUE_SIZE];
     int size;  // Current size of queue
@@ -34,7 +43,10 @@ pthread_t consumerThreads[MAX_CONSUMER_THREADS];
 pthread_t managerThread;
 int numProducers = 0, numConsumers = 0;
 
-// Initialize the queue
+/**
+ * @brief Initializes the queue.
+ * @param q A pointer to the queue.
+ */
 void initQueue(Queue *q) {
     q->size = 0;
     pthread_mutex_init(&q->mutex, NULL);
@@ -42,64 +54,73 @@ void initQueue(Queue *q) {
     pthread_cond_init(&q->full, NULL);
 }
 
-// Add item to queue
+/**
+ * @brief Adds an item to the end of the queue. This is the producer's operation.
+ * @param q A pointer to the queue.
+ * @param item The item to add.
+ */
 void enQ(Queue *q, int item) {
-    fprintf(stderr, "\t\t\t\tCalled enQ!\n");
-    fprintf(stderr, "\t\t\t\tenQ locking!\n");
     pthread_mutex_lock(&q->mutex);
     
     while (isFull(q)) {
-        fprintf(stderr, "\t\t\t\tenQ Waiting!\n");
         pthread_cond_wait(&q->full, &q->mutex);
     }
     
-    // Shift elements to make room at the end
     q->items[q->size] = item;
     q->size++;
     
-    fprintf(stderr, "\t\t\t\tenQ signalling!\n");
     pthread_cond_signal(&q->empty);
-    fprintf(stderr, "\t\t\t\tenQ unlocking!\n");
     pthread_mutex_unlock(&q->mutex);
 }
 
-// Remove item from queue
+/**
+ * @brief Removes an item from the front of the queue. This is the consumer's operation.
+ * @param q A pointer to the queue.
+ * @return The item removed from the queue.
+ */
 int deQ(Queue *q) {
-    fprintf(stderr, "\t\t\t\t\t\tCalled deQ!\n");
-    fprintf(stderr, "\t\t\t\t\t\tdeQ locking!\n");
     pthread_mutex_lock(&q->mutex);
     
     while (isEmpty(q)) {
-        fprintf(stderr, "\t\t\t\t\t\tdeQ waiting!\n");
         pthread_cond_wait(&q->empty, &q->mutex);
     }
     
     int item = q->items[0];
     
-    // Shift all elements one position left
+    // Shift all elements one position to the left.
     for (int i = 0; i < q->size - 1; i++) {
         q->items[i] = q->items[i + 1];
     }
     q->size--;
     
-    fprintf(stderr, "\t\t\t\t\t\tdeQ signalling!\n");
     pthread_cond_signal(&q->full);
-    fprintf(stderr, "\t\t\t\t\t\tdeQ unlocking!\n");
     pthread_mutex_unlock(&q->mutex);
     return item;
 }
 
-// Check if queue is full
+/**
+ * @brief Checks if the queue is full.
+ * @param q A pointer to the queue.
+ * @return 1 if the queue is full, 0 otherwise.
+ */
 int isFull(Queue *q) {
     return (q->size >= MAX_QUEUE_SIZE);
 }
 
-// Check if queue is empty
+/**
+ * @brief Checks if the queue is empty.
+ * @param q A pointer to the queue.
+ * @return 1 if the queue is empty, 0 otherwise.
+ */
 int isEmpty(Queue *q) {
     return (q->size == 0);
 }
 
-// Producer function
+/**
+ * @brief The producer thread function. It produces random items and adds them to the queue.
+ * @param data A pointer to the producer's ID.
+ * @return NULL.
+ */
 void *producer(void *data) {
     int producerId = *((int *)data);
     while (1) {
@@ -109,7 +130,7 @@ void *producer(void *data) {
         for (int i = 0; i < numItems; ++i) {
             int item = rand() % 100;
             enQ(&queue, item);
-            printf("\t\t\t\tProducer %d produced %d/%d item: %d\n", 
+            printf("Producer %d produced %d/%d item: %d\n",
                    producerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -117,7 +138,11 @@ void *producer(void *data) {
     return NULL;
 }
 
-// Consumer function
+/**
+ * @brief The consumer thread function. It consumes items from the queue.
+ * @param data A pointer to the consumer's ID.
+ * @return NULL.
+ */
 void *consumer(void *data) {
     int consumerId = *((int *)data);
     while (1) {
@@ -126,7 +151,7 @@ void *consumer(void *data) {
         printf("\n");
         for (int i = 0; i < numItems; ++i) {
             int item = deQ(&queue);
-            printf("\t\t\t\t\t\tConsumer %d consumed %d/%d item: %d\n", 
+            printf("Consumer %d consumed %d/%d item: %d\n",
                    consumerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -134,17 +159,16 @@ void *consumer(void *data) {
     return NULL;
 }
 
-// Clear resources function
+/**
+ * @brief Clears all resources, including threads, mutexes, and condition variables.
+ */
 void clearResources() {
-    // Clear producer threads
     for (int i = 0; i < numProducers; ++i) {
         pthread_cancel(producerThreads[i]);
     }
-    // Clear consumer threads
     for (int i = 0; i < numConsumers; ++i) {
         pthread_cancel(consumerThreads[i]);
     }
-    // Destroy mutex and condition variables
     pthread_mutex_destroy(&queue.mutex);
     pthread_cond_destroy(&queue.empty);
     pthread_cond_destroy(&queue.full);
@@ -153,7 +177,9 @@ void clearResources() {
     numConsumers = 0;
 }
 
-// Delete producer function
+/**
+ * @brief Deletes the last created producer thread.
+ */
 void deleteProducer() {
     if (numProducers > 0) {
         pthread_cancel(producerThreads[numProducers - 1]);
@@ -164,7 +190,9 @@ void deleteProducer() {
     }
 }
 
-// Delete consumer function
+/**
+ * @brief Deletes the last created consumer thread.
+ */
 void deleteConsumer() {
     if (numConsumers > 0) {
         pthread_cancel(consumerThreads[numConsumers - 1]);
@@ -175,7 +203,11 @@ void deleteConsumer() {
     }
 }
 
-// Manager thread function
+/**
+ * @brief The manager thread function. It provides a menu-driven interface to add, remove, and clear producer and consumer threads.
+ * @param data Not used.
+ * @return NULL.
+ */
 void *manager(void *data) {
     char choice;
     printf("Welcome to the manager thread!\n");
@@ -226,6 +258,10 @@ void *manager(void *data) {
     return NULL;
 }
 
+/**
+ * @brief The main function. It initializes the queue and creates the manager thread.
+ * @return 0 on success.
+ */
 int main() {
     initQueue(&queue);
     pthread_create(&managerThread, NULL, manager, NULL);

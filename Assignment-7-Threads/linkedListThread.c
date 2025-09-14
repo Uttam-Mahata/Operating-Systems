@@ -1,3 +1,9 @@
+/**
+ * @file linkedListThread.c
+ * @brief This program implements a thread-safe linked list using POSIX threads.
+ * It demonstrates the producer-consumer problem with a manager thread to dynamically add and remove producer and consumer threads.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -9,13 +15,19 @@
 #define MAX_CONSUMER_THREADS 10
 #define MAX_SLEEP_TIME 5
 
-// Node Structure
+/**
+ * @struct Node
+ * @brief A node in the linked list.
+ */
 typedef struct Node {
     int data;
     struct Node* next;
 } Node;
 
-// Linked List Structure
+/**
+ * @struct LinkedList
+ * @brief A thread-safe linked list.
+ */
 typedef struct {
     Node* head;
     int size;
@@ -40,7 +52,10 @@ pthread_t consumerThreads[MAX_CONSUMER_THREADS];
 pthread_t managerThread;
 int numProducers = 0, numConsumers = 0;
 
-// Initialize the list
+/**
+ * @brief Initializes the linked list.
+ * @param list A pointer to the linked list.
+ */
 void initList(LinkedList *list) {
     list->head = NULL;
     list->size = 0;
@@ -49,14 +64,15 @@ void initList(LinkedList *list) {
     pthread_cond_init(&list->full, NULL);
 }
 
-// Insert node at the end of list
+/**
+ * @brief Inserts a node at the end of the list. This is the producer's operation.
+ * @param list A pointer to the linked list.
+ * @param item The item to insert.
+ */
 void insertNode(LinkedList *list, int item) {
-    fprintf(stderr, "\t\t\t\tCalled insertNode!\n");
-    fprintf(stderr, "\t\t\t\tinsertNode locking!\n");
     pthread_mutex_lock(&list->mutex);
     
     while (isFull(list)) {
-        fprintf(stderr, "\t\t\t\tinsertNode Waiting!\n");
         pthread_cond_wait(&list->full, &list->mutex);
     }
 
@@ -75,20 +91,19 @@ void insertNode(LinkedList *list, int item) {
     }
     list->size++;
 
-    fprintf(stderr, "\t\t\t\tinsertNode signalling!\n");
     pthread_cond_signal(&list->empty);
-    fprintf(stderr, "\t\t\t\tinsertNode unlocking!\n");
     pthread_mutex_unlock(&list->mutex);
 }
 
-// Remove node from front of list
+/**
+ * @brief Removes a node from the front of the list. This is the consumer's operation.
+ * @param list A pointer to the linked list.
+ * @return The item removed from the list.
+ */
 int removeNode(LinkedList *list) {
-    fprintf(stderr, "\t\t\t\t\t\tCalled removeNode!\n");
-    fprintf(stderr, "\t\t\t\t\t\tremoveNode locking!\n");
     pthread_mutex_lock(&list->mutex);
 
     while (isEmpty(list)) {
-        fprintf(stderr, "\t\t\t\t\t\tremoveNode waiting!\n");
         pthread_cond_wait(&list->empty, &list->mutex);
     }
 
@@ -98,24 +113,34 @@ int removeNode(LinkedList *list) {
     free(temp);
     list->size--;
 
-    fprintf(stderr, "\t\t\t\t\t\tremoveNode signalling!\n");
     pthread_cond_signal(&list->full);
-    fprintf(stderr, "\t\t\t\t\t\tremoveNode unlocking!\n");
     pthread_mutex_unlock(&list->mutex);
     return item;
 }
 
-// Check if list is full
+/**
+ * @brief Checks if the list is full.
+ * @param list A pointer to the linked list.
+ * @return 1 if the list is full, 0 otherwise.
+ */
 int isFull(LinkedList *list) {
     return (list->size >= MAX_LIST_SIZE);
 }
 
-// Check if list is empty
+/**
+ * @brief Checks if the list is empty.
+ * @param list A pointer to the linked list.
+ * @return 1 if the list is empty, 0 otherwise.
+ */
 int isEmpty(LinkedList *list) {
     return (list->size == 0);
 }
 
-// Producer function
+/**
+ * @brief The producer thread function. It produces random items and adds them to the list.
+ * @param data A pointer to the producer's ID.
+ * @return NULL.
+ */
 void *producer(void *data) {
     int producerId = *((int *)data);
     while (1) {
@@ -125,7 +150,7 @@ void *producer(void *data) {
         for (int i = 0; i < numItems; ++i) {
             int item = rand() % 100;
             insertNode(&list, item);
-            printf("\t\t\t\tProducer %d produced %d/%d item: %d\n", 
+            printf("Producer %d produced %d/%d item: %d\n",
                    producerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -133,7 +158,11 @@ void *producer(void *data) {
     return NULL;
 }
 
-// Consumer function
+/**
+ * @brief The consumer thread function. It consumes items from the list.
+ * @param data A pointer to the consumer's ID.
+ * @return NULL.
+ */
 void *consumer(void *data) {
     int consumerId = *((int *)data);
     while (1) {
@@ -142,7 +171,7 @@ void *consumer(void *data) {
         printf("\n");
         for (int i = 0; i < numItems; ++i) {
             int item = removeNode(&list);
-            printf("\t\t\t\t\t\tConsumer %d consumed %d/%d item: %d\n", 
+            printf("Consumer %d consumed %d/%d item: %d\n",
                    consumerId, i+1, numItems, item);
         }
         sleep(rand() % MAX_SLEEP_TIME + 1);
@@ -150,34 +179,33 @@ void *consumer(void *data) {
     return NULL;
 }
 
-// Clear resources function
+/**
+ * @brief Clears all resources, including threads, mutexes, and condition variables.
+ */
 void clearResources() {
-    // Clear producer threads
     for (int i = 0; i < numProducers; ++i) {
         pthread_cancel(producerThreads[i]);
     }
-    // Clear consumer threads
     for (int i = 0; i < numConsumers; ++i) {
         pthread_cancel(consumerThreads[i]);
     }
-    // Free all nodes in the list
     Node* current = list.head;
     while (current != NULL) {
         Node* temp = current;
         current = current->next;
         free(temp);
     }
-    // Destroy mutex and condition variables
     pthread_mutex_destroy(&list.mutex);
     pthread_cond_destroy(&list.empty);
     pthread_cond_destroy(&list.full);
     printf("All threads and resources cleared.\n");
-    // Reset thread counts
     numProducers = 0;
     numConsumers = 0;
 }
 
-// Delete producer function
+/**
+ * @brief Deletes the last created producer thread.
+ */
 void deleteProducer() {
     if (numProducers > 0) {
         pthread_cancel(producerThreads[numProducers - 1]);
@@ -188,7 +216,9 @@ void deleteProducer() {
     }
 }
 
-// Delete consumer function
+/**
+ * @brief Deletes the last created consumer thread.
+ */
 void deleteConsumer() {
     if (numConsumers > 0) {
         pthread_cancel(consumerThreads[numConsumers - 1]);
@@ -199,7 +229,11 @@ void deleteConsumer() {
     }
 }
 
-// Manager thread function
+/**
+ * @brief The manager thread function. It provides a menu-driven interface to add, remove, and clear producer and consumer threads.
+ * @param data Not used.
+ * @return NULL.
+ */
 void *manager(void *data) {
     char choice;
     printf("Welcome to the manager thread!\n");
@@ -250,6 +284,10 @@ void *manager(void *data) {
     return NULL;
 }
 
+/**
+ * @brief The main function. It initializes the list and creates the manager thread.
+ * @return 0 on success.
+ */
 int main() {
     initList(&list);
     pthread_create(&managerThread, NULL, manager, NULL);

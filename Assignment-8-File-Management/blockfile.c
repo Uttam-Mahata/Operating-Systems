@@ -1,37 +1,41 @@
-/* Following is a sample program to demonstrate how fixed size records (that is, structures in C) can be written at arbitrary positions in a file or can be read from arbitrary positions of a file. */
+/**
+ * @file blockfile.c
+ * @brief A simple block-based file system implementation.
+ * This program demonstrates how to manage a file as a collection of fixed-size blocks,
+ * with a bitmap to keep track of used and free blocks.
+ * @note The implementation has some issues. The bitmap is a char array instead of a bit array,
+ * which is inefficient. The file size calculation is also incorrect.
+ */
+
 #include <stdio.h>
-/* following header files are included as suggested by manuals for
-   open(2), lseek(2), write(2), close(2)
-*/
-#include <sys/types.h> /* for open(2) lseek(2) */
-#include <sys/stat.h> /* for open(2) */
-#include <fcntl.h> /* for open(2) */
-#include <unistd.h> /* for lseek(2), write(2), close(2)*/
-#include <stdlib.h> /* for malloc() */
-#include <string.h> /* for memset() */
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
-#define BLOCK_SIZE 4096 /*SIZE of each block in the file*/
+#define BLOCK_SIZE 4096
 
+/**
+ * @struct BlockRecord
+ * @brief A structure to hold the metadata of the file system.
+ */
 typedef struct blockrec {
-	int n; /*Number of records in the block*/
-	int size; /*Size of each record in the block*/
-	int ubn; /*Number of used block*/
-	int fbn; /*Number of free block*/
-	char ub[256]; /*Used block bit pattern*/
+    int n;          /**< Number of blocks in the file. */
+    int size;       /**< Size of each block. */
+    int ubn;        /**< Number of used blocks. */
+    int fbn;        /**< Number of free blocks. */
+    char ub[256];   /**< Used block bitmap. '1' for used, '0' for free. */
 } BlockRecord;
 
-/*Function Prototype*/
-
-// int init_File_dd(const char *fname, int bsize, int bno); /* creates a file (if it does not exist) called fname of appropriate size (4096 + bsize*bno Bytes) in your folder. The function initializes the first 4096 Byes putting proper values for n, s, ubn, fbn, and ub. If for some reason this functions fails, it returns -1. Otherwise it returns 0.
-// */
-// int get_freeblock(const char *fname); /* reads the 1st 4096 Bytes (containing n, s, ubn, fbn, ub) from the file fname  and finds and returns the block-number of the 1st free block (starting from the 0th bloc) in that file. This function sets the corresponding  bit in ub and fills up the free block with 1's.  ubn and fbn too  are modified appropriately.  On failure this function returns -1. Please  note that all the modifications done by this function have to be written back to the file fname.
-// */
-// int free_block(const char *fname, int bno);/* reads the 1st 4096 Bytes (containing n, s, ubn, fbn, ub) from the file fname  and frees the block bno, that is,  resets the bit corresponding to the block bno in ub. This function  fills up the  block bno with 0's.  ubn and fbn too  are modified appropriately.  On success  this function returns 1. It returns 0 otherwise.  Please note that all the modifications done by this function have to be written back to the file fname.
-// */
-// int check_fs(const char *fname);/*
-// checks the integrity of the file fname with respect to n, s, ubn, hbn, ub and the contents of the blocks. In case of any inconsistency (say, ubn+fbn ≠  n, ub does not contain ubn number of 1's, etc.), this function returns 1. It returns 0 otherwise.
-// 				   */
-
+/**
+ * @brief Initializes a file with a given number of blocks of a given size.
+ * @param fname The name of the file to initialize.
+ * @param bsize The size of each block.
+ * @param bno The number of blocks.
+ * @return 0 on success, -1 on failure.
+ */
 int init_File_dd(const char *fname, int bsize, int bno) {
     int fd;
     BlockRecord br;
@@ -40,7 +44,7 @@ int init_File_dd(const char *fname, int bsize, int bno) {
 
     fd = open(fname, O_CREAT | O_WRONLY, 0700);
     if (fd == -1) {
-        fprintf(stderr, "Cannot open file for writing: ");
+        perror("open");
         return -1;
     }
     br.n = bno;
@@ -49,7 +53,7 @@ int init_File_dd(const char *fname, int bsize, int bno) {
     br.fbn = bno;
     memset(br.ub, '0', sizeof(br.ub));
     printf("Block size: %d, Number of blocks: %d\n", bsize, bno);
-    write(fd, (void*)&br, sizeof(BlockRecord));
+    write(fd, (void *)&br, sizeof(BlockRecord));
     for (i = 0; i < bno; i++) {
         char *block = malloc(bsize);
         memset(block, '0', bsize);
@@ -59,6 +63,12 @@ int init_File_dd(const char *fname, int bsize, int bno) {
     close(fd);
     return 0;
 }
+
+/**
+ * @brief Gets the first free block in the file.
+ * @param fname The name of the file.
+ * @return The block number of the first free block, or -1 if no free blocks are available.
+ */
 int get_freeblock(const char *fname) {
     int fd;
     BlockRecord br;
@@ -66,45 +76,51 @@ int get_freeblock(const char *fname) {
 
     fd = open(fname, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Cannot open file for writing: ");
+        perror("open");
         return -1;
     }
 
-    read(fd, (void*)&br, sizeof(BlockRecord));
+    read(fd, (void *)&br, sizeof(BlockRecord));
     for (i = 0; i < br.n; i++) {
         if (br.ub[i] == '0') {
             br.ub[i] = '1';
             br.ubn++;
             br.fbn--;
             lseek(fd, 0, SEEK_SET);
-            write(fd, (void*)&br, sizeof(BlockRecord));
+            write(fd, (void *)&br, sizeof(BlockRecord));
             close(fd);
             printf("Free block number: %d\n", i);
             return i;
-
         }
     }
 
     close(fd);
     return -1;
 }
+
+/**
+ * @brief Frees a block in the file.
+ * @param fname The name of the file.
+ * @param bno The block number to free.
+ * @return 1 on success, 0 on failure.
+ */
 int free_block(const char *fname, int bno) {
     int fd;
     BlockRecord br;
 
     fd = open(fname, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Cannot open file for writing: ");
+        perror("open");
         return 0;
     }
 
-    read(fd, (void*)&br, sizeof(BlockRecord));
+    read(fd, (void *)&br, sizeof(BlockRecord));
     if (br.ub[bno] == '1') {
         br.ub[bno] = '0';
         br.ubn--;
         br.fbn++;
         lseek(fd, 0, SEEK_SET);
-        write(fd, (void*)&br, sizeof(BlockRecord));
+        write(fd, (void *)&br, sizeof(BlockRecord));
         close(fd);
         return 1;
     }
@@ -113,27 +129,37 @@ int free_block(const char *fname, int bno) {
     return 0;
 }
 
+/**
+ * @brief Checks the integrity of the file system.
+ * @param fname The name of the file.
+ * @return 0 if the file system is consistent, 1 otherwise.
+ */
 int check_fs(const char *fname) {
     int fd;
     BlockRecord br;
-    int i, j;
 
     fd = open(fname, O_RDWR);
     if (fd == -1) {
-        fprintf(stderr, "Cannot open file for writing: ");
+        perror("open");
         return 1;
     }
 
-    read(fd, (void*)&br, sizeof(BlockRecord));
+    read(fd, (void *)&br, sizeof(BlockRecord));
     if (br.ubn + br.fbn != br.n) {
         close(fd);
         return 1;
     }
-   
 
     close(fd);
     return 0;
 }
+
+/**
+ * @brief The main function. It initializes a file system, gets a free block, frees a block, and checks the file system integrity.
+ * @param argc The number of command-line arguments.
+ * @param argv An array of command-line arguments.
+ * @return 0 on success, 1 on failure.
+ */
 int main(int argc, char *argv[]) {
     int bsize, bno;
     if (argc != 4) {
@@ -146,7 +172,6 @@ int main(int argc, char *argv[]) {
     get_freeblock(argv[1]);
     free_block(argv[1], 0);
     check_fs(argv[1]);
-    
-
+    return 0;
 }
 
