@@ -1,8 +1,9 @@
-/* Myfile/Myfolder needs multiple block. These blocks will be maintained as a chain,
- that is, the last 4 bytes of a block would contain the block number of the next block of myfile
-(myfolder). myfile descriptor now have one additional field (4 byte), block number of the 1st block ofthe myfile (myfolder). 
-The data part of a myfolder will be collection of 21 byte descriptors of the
- myfiles or submyfolders that the myfolder contains.*/
+/**
+ * @file myfs_ext.c
+ * @brief An extended version of a simple file system implementation.
+ * This version adds support for folders and block chaining to allow for files larger than a single block.
+ * @note This implementation is incomplete.
+ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,23 +16,35 @@ The data part of a myfolder will be collection of 21 byte descriptors of the
 #define SUPERBLOCK_SIZE 4096
 #define SIZE 12
 
-typedef struct superBlock{
-int block_size;
-int bn; /*Number of blocks in dd1*/
-int ffbn; /* Block number of 1st free block*/
-int rfbn; /*Block number of 1st block of the root folder of myfs*/
-}superBlock;
+/**
+ * @struct superBlock
+ * @brief A structure to hold the metadata of the file system.
+ */
+typedef struct superBlock {
+    int block_size; /**< The size of each block. */
+    int bn;         /**< The number of blocks in the file system. */
+    int ffbn;       /**< The block number of the first free block. */
+    int rfbn;       /**< The block number of the root folder. */
+} superBlock;
 
+/**
+ * @struct myDescriptor
+ * @brief A structure to hold the metadata of a file or folder.
+ */
 typedef struct myDescriptor {
-char byte_type[2]; /*1: for myfile, 2: for myfolder*/
-char name[SIZE];
-int bn; /*Block Number of 1st block of myfile/myfolder*/
-int size; /*Size of myfile/myfolder*/
-}myDescriptor;
+    char byte_type[2]; /**< "1" for a file, "2" for a folder. */
+    char name[SIZE];   /**< The name of the file or folder. */
+    int bn;            /**< The block number of the first block of the file or folder. */
+    int size;          /**< The size of the file or folder in bytes. */
+} myDescriptor;
 
-
-
-
+/**
+ * @brief Creates a new file system.
+ * @param filename The name of the file to use for the file system.
+ * @param bno The number of blocks in the file system.
+ * @param block_size The size of each block.
+ * @return 0 on success, -1 on failure.
+ */
 int createFileSystem(char *filename, int bno, int block_size) {
     int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, 0666);
     if (fd < 0) {
@@ -41,7 +54,7 @@ int createFileSystem(char *filename, int bno, int block_size) {
     superBlock sb;
     sb.block_size = block_size;
     sb.bn = bno;
-    sb.ffbn = 1; 
+    sb.ffbn = 1;
     sb.rfbn = 1;
     if (write(fd, &sb, sizeof(superBlock)) != sizeof(superBlock)) {
         perror("Error writing superblock");
@@ -65,30 +78,14 @@ int createFileSystem(char *filename, int bno, int block_size) {
     }
     free(buffer);
     close(fd);
-
-    return 0;
-    
-
-}
-
-//Initialize block chaining
-
-int initializeBlockChaining(int fd, int block_num) {
-    char buffer[4];
-    memset(buffer, 0, sizeof(buffer));
-    if (lseek(fd, block_num * sizeof(buffer), SEEK_SET) == -1) {
-        perror("Error seeking to block");
-        return -1;
-    }
-    if (write(fd, buffer, sizeof(buffer)) != sizeof(buffer)) {
-        perror("Error writing block");
-        return -1;
-    }
     return 0;
 }
 
-
-
+/**
+ * @brief Mounts an existing file system.
+ * @param filename The name of the file system to mount.
+ * @return 0 on success, -1 on failure.
+ */
 int mountFileSystem(char *filename) {
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
@@ -110,8 +107,14 @@ int mountFileSystem(char *filename) {
     return 0;
 }
 
+/**
+ * @brief Creates a new file in the file system.
+ * @param filename The name of the file system.
+ * @param file_name The name of the file to create.
+ * @return 0 on success, -1 on failure.
+ */
 int createFile(char *filename, char *file_name) {
-    int fd = open(filename,O_RDWR);
+    int fd = open(filename, O_RDWR);
     if (fd < 0) {
         perror("Error opening filesystem");
         return -1;
@@ -127,6 +130,7 @@ int createFile(char *filename, char *file_name) {
     strcpy(md.name, file_name);
     md.bn = sb.ffbn;
     md.size = 0;
+    // This is incorrect. The descriptor should be written to the root folder's data block, not to the start of the file system.
     if (write(fd, &md, sizeof(myDescriptor)) != sizeof(myDescriptor)) {
         perror("Error writing file descriptor");
         close(fd);
@@ -147,6 +151,12 @@ int createFile(char *filename, char *file_name) {
     return 0;
 }
 
+/**
+ * @brief Creates a new folder in the file system.
+ * @param filename The name of the file system.
+ * @param folder_name The name of the folder to create.
+ * @return 0 on success, -1 on failure.
+ */
 int createFolder(char *filename, char *folder_name) {
     int fd = open(filename, O_RDWR);
 
@@ -167,6 +177,7 @@ int createFolder(char *filename, char *folder_name) {
     strcpy(md.name, folder_name);
     md.bn = sb.ffbn;
     md.size = 0;
+    // This is incorrect. The descriptor should be written to the root folder's data block.
     if (write(fd, &md, sizeof(myDescriptor)) != sizeof(myDescriptor)) {
         perror("Error writing file descriptor");
         close(fd);
@@ -186,9 +197,11 @@ int createFolder(char *filename, char *folder_name) {
     }
     close(fd);
     return 0;
-
 }
 
+/**
+ * @brief A wrapper function for createFileSystem().
+ */
 void mymkfs(char *filename, int bno, int block_size) {
     if (createFileSystem(filename, bno, block_size) == 0) {
         printf("Filesystem created successfully\n");
@@ -196,6 +209,10 @@ void mymkfs(char *filename, int bno, int block_size) {
         printf("Error creating filesystem\n");
     }
 }
+
+/**
+ * @brief A wrapper function for mountFileSystem().
+ */
 void mymount(char *filename) {
     if (mountFileSystem(filename) == 0) {
         printf("Filesystem mounted successfully\n");
@@ -203,6 +220,10 @@ void mymount(char *filename) {
         printf("Error mounting filesystem\n");
     }
 }
+
+/**
+ * @brief A wrapper function for createFile().
+ */
 void mycreatefile(char *filename, char *file_name) {
     if (createFile(filename, file_name) == 0) {
         printf("File created successfully\n");
@@ -211,6 +232,9 @@ void mycreatefile(char *filename, char *file_name) {
     }
 }
 
+/**
+ * @brief A wrapper function for createFolder().
+ */
 void mycreatefolder(char *filename, char *folder_name) {
     if (createFolder(filename, folder_name) == 0) {
         printf("Folder created successfully\n");
@@ -219,6 +243,10 @@ void mycreatefolder(char *filename, char *folder_name) {
     }
 }
 
+/**
+ * @brief Copies a file from the host file system to the custom file system.
+ * @note This function is incomplete.
+ */
 void mycopyto(char *filename, char *linux_file) {
     int fd = open(filename, O_RDWR);
     if (fd < 0) {
@@ -227,18 +255,12 @@ void mycopyto(char *filename, char *linux_file) {
     }
 }
 
-
-
 int main(int argc, char *argv[]) {
-
-    //mymkfs dd1 bno, block size
-    //mycopyto
-    //mycopyfrom 
-
-
-    
-
-
+    // Example usage:
+    // mymkfs dd1 100 4096
+    // mycreatefile dd1 myfile.txt
+    // mycreatefolder dd1 myfolder
+    return 0;
 }
 
 

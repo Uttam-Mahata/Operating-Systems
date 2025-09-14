@@ -1,3 +1,11 @@
+/**
+ * @file matrix_multiplication_shm.c
+ * @brief This program demonstrates parallel matrix multiplication using shared memory and multiple child processes.
+ * The parent process reads two matrices from the user and stores them in shared memory. It then creates a child process
+ * for each row of the output matrix. Each child process calculates one row of the result matrix and stores it in shared memory.
+ * The parent process then waits for all child processes to complete and prints the result matrix.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -11,16 +19,22 @@
 #define MAX_M 10
 #define MAX_P 10
 
+/**
+ * @brief A structure to hold the matrices and their dimensions that will be shared between the parent and child processes.
+ */
 typedef struct {
-    int a[MAX_N][MAX_M];
-    int b[MAX_M][MAX_P];
-    int c[MAX_N][MAX_P];
-    int n, m, p;
+    int a[MAX_N][MAX_M];    /**< The first matrix. */
+    int b[MAX_M][MAX_P];    /**< The second matrix. */
+    int c[MAX_N][MAX_P];    /**< The result matrix. */
+    int n, m, p;            /**< The dimensions of the matrices. */
 } SharedData;
 
-int shmid;
+int shmid; /**< The ID of the shared memory segment. */
 
-// Signal handler to release shared memory
+/**
+ * @brief A signal handler to release the shared memory segment when the program is interrupted.
+ * @param signum The signal number.
+ */
 void releaseSHM(int signum) {
     int status = shmctl(shmid, IPC_RMID, NULL);
     if (status == 0) {
@@ -29,9 +43,15 @@ void releaseSHM(int signum) {
         perror("Cannot remove shared memory");
     }
 
-    kill(0, SIGKILL);  // Kill all processes
+    kill(0, SIGKILL);  // Kill all processes in the process group.
 }
 
+/**
+ * @brief Calculates one row of the result matrix.
+ * This function is executed by each child process.
+ * @param shared A pointer to the shared data structure.
+ * @param row_num The row number to calculate.
+ */
 void calculate_row(SharedData *shared, int row_num) {
     for (int j = 0; j < shared->p; j++) {
         shared->c[row_num][j] = 0;
@@ -41,25 +61,30 @@ void calculate_row(SharedData *shared, int row_num) {
     }
 }
 
+/**
+ * @brief The main function. It creates a shared memory segment, reads two matrices from the user, creates a child process
+ * for each row of the result matrix, waits for the children to complete, and then prints the result matrix.
+ * @return 0 on success, 1 on failure.
+ */
 int main() {
     SharedData *shared;
-    pid_t children[MAX_N];  // To Store child PIDs
+    pid_t children[MAX_N];  // To store child PIDs.
     int i, j, status;
 
-    signal(SIGINT, releaseSHM);  // Signal handler to release shared memory
+    signal(SIGINT, releaseSHM);  // Set up the signal handler to release shared memory on interrupt.
 
-    // Create shared memory segment
+    // Create a shared memory segment.
     shmid = shmget(IPC_PRIVATE, sizeof(SharedData), IPC_CREAT | 0666);
     if (shmid == -1) {
         perror("shmget failed");
         exit(1);
     }
 
-    // Attach shared memory
+    // Attach the shared memory segment to the address space of the process.
     shared = (SharedData *)shmat(shmid, NULL, 0);
     if (shared == (void *)-1) {
         perror("shmat failed");
-        releaseSHM(0); // Clean up shared memory before exiting
+        releaseSHM(0); // Clean up shared memory before exiting.
         exit(1);
     }
 
@@ -71,7 +96,7 @@ int main() {
 
     if (i != shared->m) {
         printf("Error: Incompatible matrix dimensions (m values must match).\n");
-        releaseSHM(0);  // Clean up shared memory
+        releaseSHM(0);  // Clean up shared memory.
         exit(1);
     }
 
@@ -95,7 +120,7 @@ int main() {
         }
     }
 
-    //Create child processes
+    // Create a child process for each row of the result matrix.
     for (i = 0; i < shared->n; i++) {
         children[i] = fork();
         if (children[i] == -1) {
@@ -104,18 +129,18 @@ int main() {
             exit(1);
         }
 
-        if (children[i] == 0) { // Child process
+        if (children[i] == 0) { // This is the child process.
             calculate_row(shared, i);
             exit(0);
         }
     }
 
-    // Parent process: wait for all children to complete
+    // The parent process waits for all children to complete.
     for (i = 0; i < shared->n; i++) {
         waitpid(children[i], &status, 0);
     }
 
-    // Parent process
+    // The parent process prints the result matrix.
     printf("Result matrix C:\n");
     for (i = 0; i < shared->n; i++) {
         for (j = 0; j < shared->p; j++) {
@@ -124,10 +149,10 @@ int main() {
         printf("\n");
     }
 
-    status = shmdt(shared); // Detach shared memory
+    status = shmdt(shared); // Detach the shared memory segment.
     if (status == -1) {
         perror("shmdt failed");
     }
-    releaseSHM(0); // Call  signal handler to properly remove shared memory
+    releaseSHM(0); // Call the signal handler to properly remove the shared memory segment.
     return 0;
 }

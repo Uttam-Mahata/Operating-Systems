@@ -26,6 +26,20 @@ Implementing a shared stack data structure for concurrent processes in C require
 
 ### C Implementation
 
+To compile the C code, you can use the following command:
+
+```bash
+gcc sharedStack.c -o sharedStack
+```
+
+To run the compiled program, use the following command:
+
+```bash
+./sharedStack
+```
+
+The C code is as follows:
+
 ```c
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +60,7 @@ typedef struct {
 // Semaphore operations
 void sem_wait(int semid, int sem_num) {
     struct sembuf sb = {sem_num, -1, 0};
-    if (semop(semid, &sb, 1) {
+    if (semop(semid, &sb, 1) == -1) {
         perror("sem_wait failed");
         exit(EXIT_FAILURE);
     }
@@ -54,7 +68,7 @@ void sem_wait(int semid, int sem_num) {
 
 void sem_signal(int semid, int sem_num) {
     struct sembuf sb = {sem_num, 1, 0};
-    if (semop(semid, &sb, 1) {
+    if (semop(semid, &sb, 1) == -1) {
         perror("sem_signal failed");
         exit(EXIT_FAILURE);
     }
@@ -83,7 +97,7 @@ void create_stack(int *shmid, int *semid) {
 }
 
 // Attach to shared memory and semaphores
-SharedStack *get_stack(int shmid, int semid) {
+SharedStack *get_stack(int shmid) {
     SharedStack *stack = (SharedStack *)shmat(shmid, NULL, 0);
     if (stack == (void *)-1) {
         perror("shmat failed");
@@ -122,7 +136,7 @@ int main() {
 
     // Create the stack
     create_stack(&shmid, &semid);
-    stack = get_stack(shmid, semid);
+    stack = get_stack(shmid);
     stack->top = 0; // Initialize top
 
     // Example usage
@@ -134,7 +148,7 @@ int main() {
     // Cleanup
     shmdt(stack);
     shmctl(shmid, IPC_RMID, NULL);
-    semctl(semid, 0, IPC_RMID);
+    semctl(semid, 0, IPC_RMID, 0);
 
     return 0;
 }
